@@ -186,8 +186,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     _vestingLocks[lockId].adminTransferOBO = adminTransferOBO;
   }
 
+  function updateVestingTransferability(uint256 lockId, bool transferable) external {
+    require(msg.sender == ownerOf(lockId), '!owner');
+    hedgeyVesting.toggleAdminTransferOBO(_vestingLocks[lockId].vestingTokenId, transferable);
+  }
+
   function burnRevokedVesting(uint256 lockId) external {
-    require(isApprovedRedeemer(lockId, msg.sender), '!approved');
+    require(msg.sender == ownerOf(lockId), '!owner');
     VestingLock memory lock = _vestingLocks[lockId];
     require(lock.availableAmount == 0, 'available_amount');
     try hedgeyVesting.ownerOf(lock.vestingTokenId) {
@@ -224,7 +229,6 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
       // need to check that the vesting token has been burned as well
       _burn(lockId);
       delete _vestingLocks[lockId];
-      delete _allocatedVestingTokenIds[lock.vestingTokenId];
     } else {
       _vestingLocks[lockId].availableAmount = lockedBalance;
       _vestingLocks[lockId].start = unlockTime;
@@ -392,7 +396,6 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
         return super._update(to, tokenId, auth);
       }
     } else {
-      console.log('minting a new token');
       return super._update(to, tokenId, address(0x0));
     }
   }
