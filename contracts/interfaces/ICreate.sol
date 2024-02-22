@@ -29,4 +29,6 @@ interface ICreate {
     bool transferable,
     bool adminTransferOBO
   ) external returns (uint256 newLockId);
+
+  function hedgeyVesting() external view returns (address);
 }

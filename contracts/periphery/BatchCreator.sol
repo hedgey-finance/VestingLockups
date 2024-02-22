@@ -31,6 +31,7 @@ contract BatchCreator {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
+    require(ICreate(lockupContract).hedgeyVesting() == vestingContract, 'wrongContracts');
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;

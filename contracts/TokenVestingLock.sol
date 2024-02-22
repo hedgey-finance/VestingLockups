@@ -10,6 +10,9 @@ import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 import './libraries/UnlockLibrary.sol';
 import './libraries/TransferHelper.sol';
 import './interfaces/IVesting.sol';
+import './VotingVault.sol';
+
+import 'hardhat/console.sol';
 
 contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   IVesting public hedgeyVesting;
@@ -31,8 +34,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   struct VestingLock {
     address token;
-    uint256 availableAmount;
     uint256 totalAmount;
+    uint256 availableAmount;
     uint256 start;
     uint256 cliff;
     uint256 rate;
@@ -52,9 +55,12 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   mapping(uint256 => bool) internal _adminRedeem;
 
+  mapping(uint256 => address) public votingVaults;
+
   event RedeemerApproved(uint256 indexed lockId, address redeemer);
   event RedeemerRemoved(uint256 indexed lockId, address redeemer);
   event AdminRedemption(uint256 indexed lockId, bool enabled);
+  event VotingVaultCreated(uint256 indexed lockId, address votingVault);
 
   constructor(
     string memory name,
@@ -126,6 +132,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     _allocatedVestingTokenIds[vestingTokenId] == true;
     address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
     newLockId = incrementTokenId();
+    console.log('newLockId', newLockId);
     uint256 totalAmount = hedgeyVesting.plans(vestingTokenId).amount;
     address token = hedgeyVesting.plans(vestingTokenId).token;
     _vestingLocks[newLockId] = VestingLock(
@@ -145,7 +152,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
       _adminRedeem[newLockId] = true;
       emit AdminRedemption(newLockId, true);
     }
+    console.log('recipient.beneficiary', recipient.beneficiary);
     _mint(recipient.beneficiary, newLockId);
+    console.log('owner of token', _ownerOf(newLockId));
+    console.log('current token id', currentTokenId());
   }
 
   function redeemAndUnlockPlans(uint256[] calldata lockIds) external nonReentrant {
@@ -268,7 +278,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev by default all plans are self delegated, this allows for the owner of a plan to delegate their NFT to a different address. This calls the internal _delegateToken function from ERC721Delegate.sol contract
   /// @param lockId is the token Id of the NFT and vesting plan to be delegated
   /// @param delegatee is the address that the plan will be delegated to
-  function delegate(uint256 lockId, address delegatee) external {
+  function delegateLock(uint256 lockId, address delegatee) external {
     _delegateToken(delegatee, lockId);
   }
 
@@ -277,7 +287,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this function iterates through the array of plans and delegatees, delegating each individual NFT.
   /// @param lockIds is the array of planIds that will be delegated
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
-  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+  function delegateLocks(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
     require(lockIds.length == delegatees.length, 'array error');
     for (uint256 i; i < lockIds.length; i++) {
       _delegateToken(delegatees[i], lockIds[i]);
@@ -300,6 +310,62 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     }
   }
 
+
+  /// @notice function to setup a voting vault, this calls an internal voting function to set it up
+  /// @param lockId is the id of the vesting plan and NFT
+  function setupVoting(uint256 lockId) external nonReentrant returns (address votingVault) {
+    votingVault = _setupVoting(lockId);
+  }
+
+  /// @notice function for an owner of a vesting plan to delegate a single vesting plan to  single delegate
+  /// @dev this will call an internal delegate function for processing
+  /// if there is no voting vault setup, this function will automatically create a voting vault and then delegate the tokens to the delegatee
+  /// @param lockId is the id of the vesting plan and NFT
+  function delegate(uint256 lockId, address delegatee) external nonReentrant {
+    _delegate(lockId, delegatee);
+  }
+
+  /// @notice this function allows an owner of multiple vesting plans to delegate multiple of them in a single transaction, each planId corresponding to a delegatee address
+  /// @param lockIds is the ids of the vesting plan and NFT
+  /// @param delegatees is the array of addresses where each vesting plan will delegate the tokens to
+  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+    require(lockIds.length == delegatees.length, 'array error');
+    for (uint256 i; i < lockIds.length; i++) {
+      _delegate(lockIds[i], delegatees[i]);
+    }
+  }
+
+  /// @notice the internal function to setup a voting vault.
+  /// @dev this will check that no voting vault exists already and then deploy a new voting vault contract
+  // during the constructor setup of the voting vault, it will auto delegate the voting vault address to whatever the existing delegate of the vesting plan holder has delegated to
+  // if it has not delegated yet, it will self-delegate the tokens
+  /// then transfer the tokens remaining in the vesting plan to the voting vault physically
+  /// @param lockId is the id of the vesting plan and NFT
+  function _setupVoting(uint256 lockId) internal returns (address) {
+    require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!delegator');
+    require(votingVaults[lockId] == address(0), 'exists');
+    VestingLock memory lock = _vestingLocks[lockId];
+    VotingVault vault = new VotingVault(lock.token, ownerOf(lockId));
+    votingVaults[lockId] = address(vault);
+    TransferHelper.withdrawTokens(lock.token, address(vault), lock.availableAmount);
+    emit VotingVaultCreated(lockId, address(vault));
+    return address(vault);
+  }
+
+  /// @notice this internal function will physically delegate tokens held in a voting vault to a delegatee
+  /// @dev if a voting vautl has not been setup yet, then the function will call the internal _setupVoting function and setup a new voting vault
+  /// and then it will delegate the tokens held in the vault to the delegatee
+  /// @param lockId is the id of the vesting plan and NFT
+  /// @param delegatee is the address of the delegatee where the tokens in the voting vault will be delegated to
+  function _delegate(uint256 lockId, address delegatee) internal {
+    require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!delegator');
+    address vault = votingVaults[lockId];
+    if (votingVaults[lockId] == address(0)) {
+      vault = _setupVoting(lockId);
+    }
+    VotingVault(vault).delegateTokens(delegatee);
+  }
+
   /*******INTERNAL OVERRIDE TRANSFERABILITY*********************************************************************************/
 
   function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
@@ -310,6 +376,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
         require(_vestingLocks[tokenId].transferable, '!transferable');
         return super._update(to, tokenId, auth);
       }
+    } else {
+      return address(0x0);
     }
   }
 

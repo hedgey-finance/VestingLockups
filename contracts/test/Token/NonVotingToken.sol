@@ -5,12 +5,19 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 contract NonVotingToken is ERC20 {
 
-  constructor(string memory name, string memory symbol, uint256 initialSupply) ERC20(name, symbol) {
+  uint8 internal _decimals;
+
+  constructor(string memory name, string memory symbol, uint256 initialSupply, uint8 __decimals) ERC20(name, symbol) {
     _mint(msg.sender, initialSupply);
+    _decimals = __decimals;
   }
 
   function mint(uint256 amount) public {
     _mint(msg.sender, amount);
+  }
+
+  function decimals() public view override returns (uint8) {
+    return _decimals;
   }
 
 }
