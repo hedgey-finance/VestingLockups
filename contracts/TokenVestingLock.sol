@@ -1,0 +1,328 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity 0.8.24;
+
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import './ERC721Delegate/ERC721Delegate.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
+
+import './libraries/UnlockLibrary.sol';
+import './libraries/TransferHelper.sol';
+import './interfaces/IVesting.sol';
+
+contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
+  IVesting public hedgeyVesting;
+
+  address public hedgeyPlanCreator;
+
+  string public baseURI;
+  /// @dev bool to ensure uri has been set before admin can be deleted
+  bool internal uriSet;
+  /// @dev admin for setting the baseURI;
+  address internal uriAdmin;
+
+  uint256 internal _tokenIds;
+
+  struct Recipient {
+    address beneficiary;
+    bool adminRedeem;
+  }
+
+  struct VestingLock {
+    address token;
+    uint256 availableAmount;
+    uint256 totalAmount;
+    uint256 start;
+    uint256 cliff;
+    uint256 rate;
+    uint256 period;
+    uint256 vestingTokenId;
+    address vestingAdmin;
+    bool transferable;
+    bool adminTransferOBO;
+  }
+
+  /// mapping from NFT Token Issued to Lock
+  mapping(uint256 => VestingLock) internal _vestingLocks;
+
+  mapping(uint256 => bool) internal _allocatedVestingTokenIds;
+
+  mapping(uint256 => mapping(address => bool)) internal _approvedRedeemers;
+
+  mapping(uint256 => bool) internal _adminRedeem;
+
+  event RedeemerApproved(uint256 indexed lockId, address redeemer);
+  event RedeemerRemoved(uint256 indexed lockId, address redeemer);
+  event AdminRedemption(uint256 indexed lockId, bool enabled);
+
+  constructor(
+    string memory name,
+    string memory symbol,
+    address _hedgeyVesting,
+    address _hedgeyPlanCreator
+  ) ERC721(name, symbol) {
+    hedgeyVesting = IVesting(_hedgeyVesting);
+    hedgeyPlanCreator = _hedgeyPlanCreator;
+    uriAdmin = msg.sender;
+  }
+
+  /*****TOKEN ID FUNCTIONS************************************************************************************ */
+
+  function incrementTokenId() internal returns (uint256) {
+    _tokenIds++;
+    return _tokenIds;
+  }
+
+  function currentTokenId() public view returns (uint256) {
+    return _tokenIds;
+  }
+
+  function getVestingLock(uint256 lockId) public view returns (VestingLock memory) {
+    return _vestingLocks[lockId];
+  }
+
+  /***********************REDEEMER FUNCTIONS**********************************************************************/
+
+  function approveRedeemer(uint256 lockId, address redeemer) external {
+    require(msg.sender == ownerOf(lockId), '!owner');
+    _approvedRedeemers[lockId][redeemer] = true;
+    emit RedeemerApproved(lockId, redeemer);
+  }
+
+  function removeRedeemer(uint256 lockId, address redeemer) external {
+    require(msg.sender == ownerOf(lockId), '!owner');
+    delete _approvedRedeemers[lockId][redeemer];
+    emit RedeemerRemoved(lockId, redeemer);
+  }
+
+  function setAdminRedemption(uint256 lockId, bool enabled) external {
+    require(msg.sender == ownerOf(lockId), '!owner');
+    _adminRedeem[lockId] = enabled;
+    emit AdminRedemption(lockId, enabled);
+  }
+
+  function isApprovedRedeemer(uint256 lockId, address redeemer) public view returns (bool) {
+    address owner = ownerOf(lockId);
+    return (owner == redeemer || _approvedRedeemers[lockId][redeemer] || _adminRedeem[lockId]);
+  }
+
+  /******CORE FUNCTIONS *********************************************************************************************/
+
+   function createVestingLock(
+    Recipient memory recipient,
+    uint256 vestingTokenId,
+    uint256 start,
+    uint256 cliff,
+    uint256 rate,
+    uint256 period,
+    bool transferable,
+    bool adminTransferOBO
+  ) external nonReentrant returns (uint256 newLockId) {
+    // some require stataments
+    require(msg.sender == hedgeyPlanCreator);
+    require(_allocatedVestingTokenIds[vestingTokenId] == false, 'allocated');
+    require(hedgeyVesting.ownerOf(vestingTokenId) == address(this), '!ownerOfNFT');
+    _allocatedVestingTokenIds[vestingTokenId] == true;
+    address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
+    newLockId = incrementTokenId();
+    uint256 totalAmount = hedgeyVesting.plans(vestingTokenId).amount;
+    address token = hedgeyVesting.plans(vestingTokenId).token;
+    _vestingLocks[newLockId] = VestingLock(
+      token,
+      totalAmount,
+      0,
+      start,
+      cliff,
+      rate,
+      period,
+      vestingTokenId,
+      vestingAdmin,
+      transferable,
+      adminTransferOBO
+    );
+    if (recipient.adminRedeem) {
+      _adminRedeem[newLockId] = true;
+      emit AdminRedemption(newLockId, true);
+    }
+    _mint(recipient.beneficiary, newLockId);
+  }
+
+  function redeemAndUnlockPlans(uint256[] calldata lockIds) external nonReentrant {
+    for (uint256 i = 0; i < lockIds.length; i++) {
+      _redeemVesting(lockIds[i]);
+      _unlock(lockIds[i]);
+    }
+  }
+
+  function unlockPlans(uint256[] calldata lockIds) external nonReentrant {
+    for (uint256 i = 0; i < lockIds.length; i++) {
+      _unlock(lockIds[i]);
+    }
+  }
+
+  function redeemVestingPlans(uint256[] calldata lockIds) external nonReentrant {
+    for (uint256 i = 0; i < lockIds.length; i++) {
+      _redeemVesting(lockIds[i]);
+    }
+  }
+
+  function updateAdminTransferOBO(uint256 lockId, bool adminTransferOBO) external {
+    require(msg.sender == ownerOf(lockId), '!owner');
+    _vestingLocks[lockId].adminTransferOBO = adminTransferOBO;
+  }
+
+  function burnRevokedVesting(uint256 lockId) external {
+    require(isApprovedRedeemer(lockId, msg.sender), '!approved');
+    VestingLock memory lock = _vestingLocks[lockId];
+    require(lock.availableAmount == 0, 'available_amount');
+    try hedgeyVesting.ownerOf(lock.vestingTokenId) {
+      revert('vesting not revoked');
+    } catch {
+      _burn(lockId);
+      delete _vestingLocks[lockId];
+      delete _allocatedVestingTokenIds[lock.vestingTokenId];
+    }
+  }
+
+  function _unlock(uint256 lockid) internal {
+    require(isApprovedRedeemer(lockid, msg.sender), '!approved');
+    VestingLock memory lock = _vestingLocks[lockid];
+    require(_allocatedVestingTokenIds[lock.vestingTokenId], 'not allocated');
+    (uint256 unlockedBalance, uint256 lockedBalance, uint256 unlockTime) = UnlockLibrary.balanceAtTime(
+      lock.start,
+      lock.cliff,
+      lock.availableAmount,
+      lock.rate,
+      lock.period,
+      block.timestamp,
+      block.timestamp
+    );
+    require(unlockedBalance > 0, 'no_unlocked_balance');
+    // transfer balance out
+    IERC20(lock.token).transfer(msg.sender, unlockedBalance);
+    uint256 remainingTotal = lock.totalAmount - unlockedBalance;
+    if (remainingTotal == 0) {
+      // need to check that the vesting token has been burned as well
+      _burn(lockid);
+      delete _vestingLocks[lockid];
+      delete _allocatedVestingTokenIds[lock.vestingTokenId];
+    } else {
+      _vestingLocks[lockid].availableAmount = lockedBalance;
+      _vestingLocks[lockid].start = unlockTime;
+      _vestingLocks[lockid].totalAmount = remainingTotal;
+    }
+  }
+
+  function _redeemVesting(uint256 lockId) internal {
+    require(isApprovedRedeemer(lockId, msg.sender), '!approved');
+    uint256 vestingId = _vestingLocks[lockId].vestingTokenId;
+    require(_allocatedVestingTokenIds[vestingId], 'not allocated');
+    require(hedgeyVesting.ownerOf(vestingId) == address(this), '!ownerOfNFT');
+    (uint256 balance, , ) = hedgeyVesting.planBalanceOf(vestingId, block.timestamp, block.timestamp);
+    require(balance > 0, 'nothing to redeem');
+    uint256 preRedemptionBalance = IERC20(_vestingLocks[lockId].token).balanceOf(address(this));
+    uint256[] memory vestingIds = new uint256[](1);
+    vestingIds[0] = vestingId;
+    hedgeyVesting.redeemPlans(vestingIds);
+    uint256 postRedemptionBalance = IERC20(_vestingLocks[lockId].token).balanceOf(address(this));
+    require(postRedemptionBalance - preRedemptionBalance == balance, 'redeem error');
+    // tokens are pulled into this contract, update the available amount to increase based on the new balanced pulled in
+    _vestingLocks[lockId].availableAmount += balance;
+    require(_vestingLocks[lockId].availableAmount <= _vestingLocks[lockId].totalAmount, 'available > total');
+  }
+
+  /************************************VESTING ADMIN FUNCTIONS**********************************************************/
+
+  function updateVestingAdmin(uint256 lockId, address newAdmin) external {
+    address vestingAdmin = hedgeyVesting.plans(_vestingLocks[lockId].vestingTokenId).vestingAdmin;
+    require(msg.sender == _vestingLocks[lockId].vestingAdmin || msg.sender == vestingAdmin, '!vestingAdmin');
+    _vestingLocks[lockId].vestingAdmin = newAdmin;
+  }
+
+  function updateTransferability(uint256 lockId, bool transferable) external {
+    require(msg.sender == _vestingLocks[lockId].vestingAdmin, '!vestingAdmin');
+    _vestingLocks[lockId].transferable = transferable;
+  }
+
+  /***************DELEGATION FUNCTIONS**********************************************************************************/
+
+  function delegateVestingPlan(uint256 lockId, address delegatee) external {
+    require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!approved');
+    hedgeyVesting.delegate(_vestingLocks[lockId].vestingTokenId, delegatee);
+  }
+
+  function delegateVestingPlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+    require(lockIds.length == delegatees.length, 'array error');
+    for (uint256 i; i < lockIds.length; i++) {
+      require(_isApprovedDelegatorOrOwner(msg.sender, lockIds[i]), '!approved');
+    }
+    hedgeyVesting.delegatePlans(lockIds, delegatees);
+  }
+
+  /// @notice delegation functions do not move any tokens and do not alter any information about the vesting plan object.
+  /// the specifically delegate the NFTs using the ERC721Delegate.sol extension.
+  /// Use the dedicated snapshot strategy 'hedgey-delegate' to leverage the delegation functions for voting with snapshot
+
+  /// @notice function to delegate an individual NFT tokenId to another wallet address.
+  /// @dev by default all plans are self delegated, this allows for the owner of a plan to delegate their NFT to a different address. This calls the internal _delegateToken function from ERC721Delegate.sol contract
+  /// @param lockId is the token Id of the NFT and vesting plan to be delegated
+  /// @param delegatee is the address that the plan will be delegated to
+  function delegate(uint256 lockId, address delegatee) external {
+    _delegateToken(delegatee, lockId);
+  }
+
+  /// @notice functeion to delegate multiple plans to multiple delegates in a single transaction
+  /// @dev this also calls the internal _delegateToken function from ERC721Delegate.sol to delegate an NFT to another wallet.
+  /// @dev this function iterates through the array of plans and delegatees, delegating each individual NFT.
+  /// @param lockIds is the array of planIds that will be delegated
+  /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
+  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+    require(lockIds.length == delegatees.length, 'array error');
+    for (uint256 i; i < lockIds.length; i++) {
+      _delegateToken(delegatees[i], lockIds[i]);
+    }
+  }
+
+  /// @notice this function will pull all of the tokens locked in vesting plans where the NFT has been delegated to a specific delegatee wallet address
+  /// this is useful for the snapshot strategy hedgey-delegate, polling this function based on the wallet signed into snapshot
+  /// by default all NFTs are self-delegated when they are minted.
+  /// @param delegatee is the address of the delegate where NFTs have been delegated to
+  /// @param token is the address of the ERC20 token that is locked in vesting plans and has been delegated
+  function delegatedBalances(address delegatee, address token) external view returns (uint256 delegatedBalance) {
+    uint256 delegateBalance = balanceOfDelegate(delegatee);
+    for (uint256 i; i < delegateBalance; i++) {
+      uint256 lockId = tokenOfDelegateByIndex(delegatee, i);
+      VestingLock memory lock = _vestingLocks[lockId];
+      if (token == lock.token) {
+        delegatedBalance += lock.availableAmount;
+      }
+    }
+  }
+
+  /*******INTERNAL OVERRIDE TRANSFERABILITY*********************************************************************************/
+
+  function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
+    if (auth != address(0x0)) {
+      if (auth == _vestingLocks[tokenId].vestingAdmin && _vestingLocks[tokenId].adminTransferOBO) {
+        return super._update(to, tokenId, auth);
+      } else {
+        require(_vestingLocks[tokenId].transferable, '!transferable');
+        return super._update(to, tokenId, auth);
+      }
+    }
+  }
+
+  function _isAuthorized(
+    address owner,
+    address spender,
+    uint256 tokenId
+  ) internal view virtual override returns (bool) {
+    return
+      spender != address(0) &&
+      (owner == spender ||
+        isApprovedForAll(owner, spender) ||
+        _getApproved(tokenId) == spender ||
+        spender == _vestingLocks[tokenId].vestingAdmin);
+  }
+}
