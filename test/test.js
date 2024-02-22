@@ -1,5 +1,6 @@
 const C = require('./constants');
 const { createTests, createErrorTests } = require('./tests/createTests');
+const happyPath = require('./tests/happyPath');
 
 
 const paramsMatrix = [
@@ -20,8 +21,8 @@ const paramsMatrix = [
 ]
 
 
-describe('Testing creating vesting plans with lockup', () => {
+describe('Testing the happy path', () => {
     paramsMatrix.forEach((params) => {
-        createTests(params);
+        happyPath(params);
     });
 });

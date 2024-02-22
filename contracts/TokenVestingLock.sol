@@ -133,11 +133,11 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     bool adminTransferOBO
   ) external nonReentrant returns (uint256 newLockId) {
     // some require stataments
-    require(msg.sender == hedgeyPlanCreator);
     require(_allocatedVestingTokenIds[vestingTokenId] == false, 'allocated');
     require(hedgeyVesting.ownerOf(vestingTokenId) == address(this), '!ownerOfNFT');
     _allocatedVestingTokenIds[vestingTokenId] == true;
     address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
+    require(msg.sender == hedgeyPlanCreator || msg.sender == vestingAdmin);
     newLockId = incrementTokenId();
     uint256 totalAmount = hedgeyVesting.plans(vestingTokenId).amount;
     address token = hedgeyVesting.plans(vestingTokenId).token;
@@ -207,14 +207,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function _unlock(uint256 lockId) internal {
     require(isApprovedRedeemer(lockId, msg.sender), '!approved');
     VestingLock memory lock = _vestingLocks[lockId];
-    require(_allocatedVestingTokenIds[lock.vestingTokenId], 'not allocated');
     (uint256 unlockedBalance, uint256 lockedBalance, uint256 unlockTime) = UnlockLibrary.balanceAtTime(
       lock.start,
       lock.cliff,
+      lock.totalAmount,
       lock.availableAmount,
       lock.rate,
       lock.period,
-      block.timestamp,
       block.timestamp
     );
     require(unlockedBalance > 0, 'no_unlocked_balance');
@@ -242,7 +241,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     uint256 vestingId = _vestingLocks[lockId].vestingTokenId;
     require(_allocatedVestingTokenIds[vestingId], 'not allocated');
     require(hedgeyVesting.ownerOf(vestingId) == address(this), '!ownerOfNFT');
-    (uint256 balance, , ) = hedgeyVesting.planBalanceOf(vestingId, block.timestamp, block.timestamp);
+    (uint256 balance, uint256 remainder , ) = hedgeyVesting.planBalanceOf(vestingId, block.timestamp, block.timestamp);
     require(balance > 0, 'nothing to redeem');
     uint256 preRedemptionBalance = IERC20(_vestingLocks[lockId].token).balanceOf(address(this));
     uint256[] memory vestingIds = new uint256[](1);
@@ -252,7 +251,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(postRedemptionBalance - preRedemptionBalance == balance, 'redeem error');
     // tokens are pulled into this contract, update the available amount to increase based on the new balanced pulled in
     _vestingLocks[lockId].availableAmount += balance;
-    require(_vestingLocks[lockId].availableAmount <= _vestingLocks[lockId].totalAmount, 'available > total');
+    _vestingLocks[lockId].totalAmount = _vestingLocks[lockId].availableAmount + remainder;
     if (votingVaults[lockId] != address(0)) {
       TransferHelper.withdrawTokens(_vestingLocks[lockId].token, votingVaults[lockId], balance);
     }
@@ -272,6 +271,18 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(msg.sender == _vestingLocks[lockId].vestingAdmin, '!vestingAdmin');
     _vestingLocks[lockId].transferable = transferable;
     emit TransferabilityUpdated(lockId, transferable);
+  }
+
+  function editLockDetails(uint256 lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period) external {
+    require(msg.sender == _vestingLocks[lockId].vestingAdmin, '!vestingAdmin');
+    // must be before the later of the start or cliff
+    uint256 editableDate = start > cliff ? start : cliff;
+    require(block.timestamp < editableDate, '!editable');
+    _vestingLocks[lockId].start = start;
+    _vestingLocks[lockId].cliff = cliff;
+    _vestingLocks[lockId].rate = rate;
+    _vestingLocks[lockId].period = period;
+    _vestingLocks[lockId].totalAmount = hedgeyVesting.plans(_vestingLocks[lockId].vestingTokenId).amount + _vestingLocks[lockId].availableAmount;
   }
 
   /***************DELEGATION FUNCTIONS**********************************************************************************/
