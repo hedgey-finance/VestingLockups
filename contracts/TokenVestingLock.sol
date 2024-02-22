@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.24;
+pragma solidity 0.8.20;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
@@ -377,7 +377,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
         return super._update(to, tokenId, auth);
       }
     } else {
-      return address(0x0);
+      console.log('minting a new token');
+      return super._update(to, tokenId, address(0x0));
     }
   }
 
