@@ -41,7 +41,7 @@ contract BatchCreator {
         token,
         vestingPlans[i].amount,
         vestingPlans[i].start,
-        vestingPlans[i].cliff,
+        vestingPlans[i].cliff,  
         vestingPlans[i].rate,
         vestingPlans[i].period,
         vestingPlans[i].vestingAdmin,
@@ -53,7 +53,6 @@ contract BatchCreator {
         locks[i].start,
         locks[i].cliff,
         locks[i].rate,
-        locks[i].period,
         transferablelocks[i],
         locks[i].adminTransferOBO
       );

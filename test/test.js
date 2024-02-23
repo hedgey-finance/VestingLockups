@@ -14,7 +14,6 @@ const paramsMatrix = [
         period: 1,
         lockStart: C.WEEK,
         lockCliff: C.WEEK,
-        lockPeriod: 1,
         lockDuration: C.MONTH,
         adminRedeem: true,
     }

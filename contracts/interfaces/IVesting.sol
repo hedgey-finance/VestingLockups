@@ -32,4 +32,6 @@ interface IVesting {
     uint256 timeStamp,
     uint256 redemptionTime
   ) external view returns (uint256 balance, uint256 remainder, uint256 latestUnlock);
+
+  function planEnd(uint256 planId) external view returns (uint256 end);
 }
