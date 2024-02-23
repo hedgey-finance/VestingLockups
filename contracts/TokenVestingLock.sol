@@ -10,7 +10,7 @@ import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 import './libraries/UnlockLibrary.sol';
 import './libraries/TransferHelper.sol';
 import './interfaces/IVesting.sol';
-import './VotingVault.sol';
+import './periphery/VotingVault.sol';
 
 import 'hardhat/console.sol';
 
@@ -312,6 +312,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     _vestingLocks[lockId].rate = rate;
     _vestingLocks[lockId].period = period;
     _vestingLocks[lockId].totalAmount = hedgeyVesting.plans(_vestingLocks[lockId].vestingTokenId).amount + _vestingLocks[lockId].availableAmount;
+    (uint256 end, bool valid) = UnlockLibrary.validateEnd(start, cliff, _vestingLocks[lockId].totalAmount, rate, period);
+    require(valid);
+    uint256 vestingEnd = hedgeyVesting.planEnd(_vestingLocks[lockId].vestingTokenId);
+    require(end >= vestingEnd, 'end error');
   }
 
   function updateAdminTransferOBO(uint256 lockId, bool adminTransferOBO) external {

@@ -5,7 +5,7 @@ import '../libraries/TransferHelper.sol';
 import '../interfaces/ICreate.sol';
 
 contract BatchCreator {
-  event BatchCreated(address indexed sender, address indexed token, uint256 count, uint256 totalAmount, uint8 mintType);
+  event BatchCreated(address indexed sender, address indexed token, uint256 numPlansCreated, uint256[] vestingPlandIds, uint256[] lockIds,  uint256 totalAmount, uint8 mintType);
 
   struct Plan {
     uint256 amount;
@@ -27,7 +27,7 @@ contract BatchCreator {
     bool transferablelocks,
     uint256 totalAmount,
     uint8 mintType
-  ) external {
+  ) external returns (uint256[] memory newVestingIds, uint256[] memory newLockIds) {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
@@ -36,7 +36,7 @@ contract BatchCreator {
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;
     for (uint16 i; i < vestingPlans.length; i++) {
-      uint256 newTokenId = ICreate(vestingContract).createPlan(
+      uint256 newVestingId = ICreate(vestingContract).createPlan(
         lockupContract,
         token,
         vestingPlans[i].amount,
@@ -47,18 +47,20 @@ contract BatchCreator {
         vestingAdmin,
         adminTransferOBO
       );
-      ICreate(lockupContract).createVestingLock(
+      uint256 newLockId = ICreate(lockupContract).createVestingLock(
         ICreate.Recipient(recipients[i].beneficiary, recipients[i].adminRedeem),
-        newTokenId,
+        newVestingId,
         locks[i].start,
         locks[i].cliff,
         locks[i].rate,
         transferablelocks,
         adminTransferOBO
       );
+      newVestingIds[i] = newVestingId;
+      newLockIds[i] = newLockId;
       amountCheck += vestingPlans[i].amount;
     }
     require(amountCheck == totalAmount, 'amount error');
-    emit BatchCreated(msg.sender, token, vestingPlans.length, totalAmount, mintType);
+    emit BatchCreated(msg.sender, token, vestingPlans.length, newVestingIds, newLockIds, totalAmount, mintType);
   }
 }
