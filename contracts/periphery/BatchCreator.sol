@@ -12,19 +12,19 @@ contract BatchCreator {
     uint256 start;
     uint256 cliff;
     uint256 rate;
-    uint256 period;
-    address vestingAdmin;
-    bool adminTransferOBO;
   }
 
   function createVestingLockupPlans(
     address vestingContract,
     address lockupContract,
     address token,
+    uint256 period,
+    address vestingAdmin,
+    bool adminTransferOBO,
     Plan[] calldata vestingPlans,
     ICreate.Recipient[] calldata recipients,
     Plan[] calldata locks,
-    bool[] calldata transferablelocks,
+    bool transferablelocks,
     uint256 totalAmount,
     uint8 mintType
   ) external {
@@ -43,9 +43,9 @@ contract BatchCreator {
         vestingPlans[i].start,
         vestingPlans[i].cliff,  
         vestingPlans[i].rate,
-        vestingPlans[i].period,
-        vestingPlans[i].vestingAdmin,
-        vestingPlans[i].adminTransferOBO
+        period,
+        vestingAdmin,
+        adminTransferOBO
       );
       ICreate(lockupContract).createVestingLock(
         ICreate.Recipient(recipients[i].beneficiary, recipients[i].adminRedeem),
@@ -53,8 +53,8 @@ contract BatchCreator {
         locks[i].start,
         locks[i].cliff,
         locks[i].rate,
-        transferablelocks[i],
-        locks[i].adminTransferOBO
+        transferablelocks,
+        adminTransferOBO
       );
       amountCheck += vestingPlans[i].amount;
     }
