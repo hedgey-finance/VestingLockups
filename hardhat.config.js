@@ -1,7 +1,7 @@
 require("@nomicfoundation/hardhat-ethers");
 require('dotenv').config();
 require('@nomicfoundation/hardhat-chai-matchers');
-require('hardhat-gas-reporter');
+// require('hardhat-gas-reporter');
 
 module.exports = {
   solidity: {

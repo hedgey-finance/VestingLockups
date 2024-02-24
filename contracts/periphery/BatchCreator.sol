@@ -4,6 +4,8 @@ pragma solidity 0.8.24;
 import '../libraries/TransferHelper.sol';
 import '../interfaces/ICreate.sol';
 
+import 'hardhat/console.sol';
+
 contract BatchCreator {
   event BatchCreated(address indexed sender, address indexed token, uint256 numPlansCreated, uint256[] vestingPlandIds, uint256[] lockIds,  uint256 totalAmount, uint8 mintType);
 
@@ -27,7 +29,7 @@ contract BatchCreator {
     bool transferablelocks,
     uint256 totalAmount,
     uint8 mintType
-  ) external returns (uint256[] memory newVestingIds, uint256[] memory newLockIds) {
+  ) external returns (uint256[] memory, uint256[] memory) {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
@@ -35,6 +37,8 @@ contract BatchCreator {
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;
+    uint256[] memory newVestingIds = new uint256[](vestingPlans.length);
+    uint256[] memory newLockIds = new uint256[](vestingPlans.length);
     for (uint16 i; i < vestingPlans.length; i++) {
       uint256 newVestingId = ICreate(vestingContract).createPlan(
         lockupContract,
@@ -62,5 +66,6 @@ contract BatchCreator {
     }
     require(amountCheck == totalAmount, 'amount error');
     emit BatchCreated(msg.sender, token, vestingPlans.length, newVestingIds, newLockIds, totalAmount, mintType);
+    return (newVestingIds, newLockIds);
   }
 }

@@ -243,8 +243,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
       lock.period,
       block.timestamp
     );
-    require(unlockedBalance > 0, 'no_unlocked_balance');
-    // transfer balance out
+    if (unlockedBalance == 0) {
+      return 0;
+    }
+      // transfer balance out
     if (votingVaults[lockId] != address(0)) {
       VotingVault(votingVaults[lockId]).withdrawTokens(ownerOf(lockId), unlockedBalance);
     } else {
@@ -266,12 +268,18 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function _redeemVesting(uint256 lockId) internal returns (uint256 balance, uint256 remainder) {
     require(isApprovedRedeemer(lockId, msg.sender), '!approved');
     uint256 vestingId = _vestingLocks[lockId].vestingTokenId;
-    console.log('vestingId', vestingId);
-    console.log(_allocatedVestingTokenIds[vestingId]);
     require(_allocatedVestingTokenIds[vestingId], 'not allocated');
-    require(hedgeyVesting.ownerOf(vestingId) == address(this), '!ownerOfNFT');
+    address vestingOwner;
+    try hedgeyVesting.ownerOf(vestingId) {
+      vestingOwner = hedgeyVesting.ownerOf(vestingId);
+    } catch {
+      return (0, 0);
+    }
+    require(vestingOwner == address(this), '!ownerOfNFT');
     (balance, remainder , ) = hedgeyVesting.planBalanceOf(vestingId, block.timestamp, block.timestamp);
-    require(balance > 0, 'nothing to redeem');
+    if (balance == 0) {
+      return (0,0);
+    }
     uint256 preRedemptionBalance = IERC20(_vestingLocks[lockId].token).balanceOf(address(this));
     uint256[] memory vestingIds = new uint256[](1);
     vestingIds[0] = vestingId;

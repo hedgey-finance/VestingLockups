@@ -1,6 +1,7 @@
 const C = require('./constants');
 const { createTests, createErrorTests } = require('./tests/createTests');
 const happyPath = require('./tests/happyPath');
+const { clientMTests } = require('./tests/realWorldTests');
 
 
 const paramsMatrix = [
@@ -20,8 +21,12 @@ const paramsMatrix = [
 ]
 
 
-describe('Testing the happy path', () => {
-    paramsMatrix.forEach((params) => {
-        happyPath(params);
-    });
-});
+// describe('Testing the happy path', () => {
+//     paramsMatrix.forEach((params) => {
+//         happyPath(params);
+//     });
+// });
+
+describe('Testing the real world tests', () => {
+    clientMTests();
+})

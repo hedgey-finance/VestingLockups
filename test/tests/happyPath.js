@@ -149,18 +149,18 @@ module.exports = (params) => {
     };
 
     const tx = await batch.createVestingLockupPlans(
-        vesting.target,
-        lock.target,
-        token.target,
-        period,
-        vestingAdmin,
-        true,
-        [vestingPlan],
-        [recipient],
-        [lockupPlan],
-        false,
-        amount,
-        2
+      vesting.target,
+      lock.target,
+      token.target,
+      period,
+      vestingAdmin,
+      true,
+      [vestingPlan],
+      [recipient],
+      [lockupPlan],
+      false,
+      amount,
+      2
     );
     const plan = await vesting.plans(2);
     expect(plan.token).to.eq(token.target);
@@ -203,7 +203,7 @@ module.exports = (params) => {
     await expect(lock.connect(a).unlock(['2'])).to.be.revertedWith('no_unlocked_balance');
     await time.increaseTo(lockCliff);
     tx = await lock.connect(a).unlock(['2']);
-    expect(tx).to.emit(token, 'Transfer').withArgs(lock.target, a.address, vestingBalance.balance)
+    expect(tx).to.emit(token, 'Transfer').withArgs(lock.target, a.address, vestingBalance.balance);
     vestingBalance = await vesting.planBalanceOf('2', now + BigInt(1), now + BigInt(1));
     tx = await lock.connect(a).redeemAndUnlock(['2']);
     expect(tx).to.emit(token, 'Transfer').withArgs(vesting.target, lock.target, vestingBalance.balance);
@@ -225,13 +225,23 @@ module.exports = (params) => {
     vestingEnd = C.planEnd(vestingStart, amount, vestingRate, period);
     vestingAdmin = admin;
     await token.approve(vesting.target, amount);
-    let tx = await vesting.createPlan(b.address, token.target, amount, vestingStart, vestingCliff, vestingRate, period, vestingAdmin, true);
+    let tx = await vesting.createPlan(
+      b.address,
+      token.target,
+      amount,
+      vestingStart,
+      vestingCliff,
+      vestingRate,
+      period,
+      vestingAdmin,
+      true
+    );
     const plan = await vesting.plans(3);
     await vesting.transferFrom(b.address, lock.target, 3);
     const recipient = {
-        beneficiary: b.address,
-        adminRedeem: params.adminRedeem,
-    }
+      beneficiary: b.address,
+      adminRedeem: params.adminRedeem,
+    };
     let lockupStart = now + BigInt(params.lockStart);
     let lockupCliff = lockupStart + BigInt(params.lockCliff);
     let lockupRate = C.getRate(amount, period, params.lockDuration);
@@ -249,5 +259,5 @@ module.exports = (params) => {
     expect(lockupPlan.adminTransferOBO).to.eq(true);
     expect(lockupPlan.transferable).to.eq(false);
     expect(await lock.ownerOf(3)).to.eq(b.address);
-  })
+  });
 };

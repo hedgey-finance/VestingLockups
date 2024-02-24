@@ -41,6 +41,7 @@ const bigMin = (a, b) => {
     DAY: BigInt(60 * 60 * 24),
     WEEK: BigInt(60 * 60 * 24 * 7),
     MONTH: BigInt(2628000),
+    YEAR: BigInt(31536000),
     bigMin,
     bigMax,
     randomBigNum,
