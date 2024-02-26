@@ -60,6 +60,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   event VestingLockupCreated(uint256 indexed lockId, address indexed beneficiary, VestingLock lock, uint256 lockEnd);
   event TokensUnlocked(uint256 indexed lockId, uint256 unlockedAmount, uint256 remainingTotal, uint256 unlockTime);
   event VestingRedeemed(uint256 indexed lockId, uint256 indexed vestingId, uint256 redeemedAmount, uint256 availableAmount, uint256 totalAmount);
+  event LockEdited(uint256 indexed lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period, uint256 end);
 
   event RedeemerApproved(uint256 indexed lockId, address redeemer);
   event RedeemerRemoved(uint256 indexed lockId, address redeemer);
@@ -324,6 +325,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(valid);
     uint256 vestingEnd = hedgeyVesting.planEnd(_vestingLocks[lockId].vestingTokenId);
     require(end >= vestingEnd, 'end error');
+    emit LockEdited(lockId, start, cliff, rate, period, end);
   }
 
   function updateAdminTransferOBO(uint256 lockId, bool adminTransferOBO) external {
