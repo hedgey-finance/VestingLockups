@@ -14,13 +14,13 @@ contract BatchCreator {
     uint256 start;
     uint256 cliff;
     uint256 rate;
+    uint256 period;
   }
 
   function createVestingLockupPlans(
     address vestingContract,
     address lockupContract,
     address token,
-    uint256 period,
     address vestingAdmin,
     bool adminTransferOBO,
     Plan[] calldata vestingPlans,
@@ -47,7 +47,7 @@ contract BatchCreator {
         vestingPlans[i].start,
         vestingPlans[i].cliff,  
         vestingPlans[i].rate,
-        period,
+        vestingPlans[i].period,
         vestingAdmin,
         adminTransferOBO
       );
@@ -57,6 +57,7 @@ contract BatchCreator {
         locks[i].start,
         locks[i].cliff,
         locks[i].rate,
+        locks[i].period,
         transferablelocks,
         adminTransferOBO
       );

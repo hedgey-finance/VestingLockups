@@ -175,6 +175,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     uint256 start,
     uint256 cliff,
     uint256 rate,
+    uint256 period,
     bool transferable,
     bool adminTransferOBO
   ) external nonReentrant returns (uint256 newLockId) {
@@ -186,7 +187,6 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(msg.sender == hedgeyPlanCreator || msg.sender == vestingAdmin);
     uint256 totalAmount = hedgeyVesting.plans(vestingTokenId).amount;
     address token = hedgeyVesting.plans(vestingTokenId).token;
-    uint256 period = hedgeyVesting.plans(vestingTokenId).period;
     uint256 vestingEnd = hedgeyVesting.planEnd(vestingTokenId);
     (uint256 lockEnd, bool valid) = UnlockLibrary.validateEnd(start, cliff, totalAmount, rate, period);
     require(valid, 'invalid end');
