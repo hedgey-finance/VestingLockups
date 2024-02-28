@@ -2,6 +2,7 @@ const C = require('./constants');
 const { createTests, createErrorTests } = require('./tests/createTests');
 const happyPath = require('./tests/happyPath');
 const { clientMTests, clientM2Test } = require('./tests/realWorldTests');
+const { hackerTests } = require('./tests/hackerTests');
 
 
 const paramsMatrix = [
@@ -20,6 +21,21 @@ const paramsMatrix = [
     }
 ]
 
+const fuzzTests = [
+    {
+        decimals: 18,
+        amount: C.randomBigNum(1000000000, 1000, 18),
+        start: C.DAY,
+        cliff: C.DAY,
+        duration: C.MONTH * BigInt(12),
+        period: C.DAY,
+        lockStart: BigInt(0),
+        lockCliff: BigInt(0),
+        lockDuration: C.MONTH * BigInt(15),
+        adminRedeem: false,
+    }
+]
+
 
 // describe('Testing the happy path', () => {
 //     paramsMatrix.forEach((params) => {
@@ -27,7 +43,13 @@ const paramsMatrix = [
 //     });
 // });
 
-describe('Testing the real world tests', () => {
+// describe('Testing the real world tests', () => {
     // clientMTests();
-    clientM2Test();
+    // clientM2Test();
+// })
+
+describe('Trying to redeem early or break the vesting lockup plans', () => {
+    fuzzTests.forEach((test) => {
+        hackerTests(test);
+    });
 })

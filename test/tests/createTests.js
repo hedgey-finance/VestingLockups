@@ -93,7 +93,7 @@ const createTests = (params) => {
     expect(lockup.vestingTokenId).to.eq(1);
     expect(lockup.adminTransferOBO).to.eq(true);
     expect(lockup.transferable).to.eq(true);
-    // expect(await lock.ownerOf(1)).to.eq(a.address);
+    expect(await lock.ownerOf(1)).to.eq(a.address);
   });
 };
 

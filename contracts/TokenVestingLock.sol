@@ -70,6 +70,12 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   event VestingAdminUpdated(uint256 indexed lockId, address newAdmin);
   event TransferabilityUpdated(uint256 indexed lockId, bool transferable);
 
+  /// @notice event for when a new URI is set for the NFT metadata linking
+  event URISet(string newURI);
+
+  /// @notice event for when the URI admin is deleted
+  event URIAdminDeleted(address _admin);
+
   constructor(
     string memory name,
     string memory symbol,
@@ -79,6 +85,27 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     hedgeyVesting = IVesting(_hedgeyVesting);
     hedgeyPlanCreator = _hedgeyPlanCreator;
     uriAdmin = msg.sender;
+  }
+
+  function _baseURI() internal view override returns (string memory) {
+    return baseURI;
+  }
+
+  /// @notice function to set the base URI after the contract has been launched, only the admin can call
+  /// @param _uri is the new baseURI for the metadata
+  function updateBaseURI(string memory _uri) external {
+    require(msg.sender == uriAdmin, '!ADMIN');
+    baseURI = _uri;
+    uriSet = true;
+    emit URISet(_uri);
+  }
+
+  /// @notice function to delete the admin once the uri has been set
+  function deleteAdmin() external {
+    require(msg.sender == uriAdmin, '!ADMIN');
+    require(uriSet, '!SET');
+    delete uriAdmin;
+    emit URIAdminDeleted(msg.sender);
   }
 
   /*****TOKEN ID FUNCTIONS*************************************************************************************/

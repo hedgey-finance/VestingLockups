@@ -2,6 +2,7 @@ require("@nomicfoundation/hardhat-ethers");
 require('dotenv').config();
 require('@nomicfoundation/hardhat-chai-matchers');
 // require('hardhat-gas-reporter');
+require('@nomicfoundation/hardhat-verify');
 
 module.exports = {
   solidity: {
@@ -23,7 +24,7 @@ module.exports = {
   networks: {
     sepolia: {
       url: process.env.SEPOLIA_URL,
-      accounts: [process.env.TEST_DEPLOYER_PRIVATE_KEY, process.env.DEPLOYER_PRIVATE_KEY, process.env.TOKEN_DEPLOYER],
+      accounts: [process.env.TEST_DEPLOYER_PRIVATE_KEY],
     },
     mainnet: {
       url: process.env.MAINNET_URL,
