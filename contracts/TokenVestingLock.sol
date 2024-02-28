@@ -193,7 +193,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     if (rate == totalAmount) {
       period = 1;
     } else {
-      require(lockEnd >= vestingEnd, 'end erorr');
+      require(lockEnd >= vestingEnd, 'end error');
     }
     newLockId = incrementTokenId();
     _vestingLocks[newLockId] = VestingLock(
