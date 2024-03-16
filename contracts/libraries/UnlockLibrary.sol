@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.24;
 
+import 'hardhat/console.sol';
+
 library UnlockLibrary {
   function min(uint256 a, uint256 b) internal pure returns (uint256 _min) {
     _min = (a <= b) ? a : b;
@@ -58,13 +60,24 @@ library UnlockLibrary {
       lockedBalance = 0;
       unlockTime = start;
       unlockedBalance = availableAmount;
+      console.log('redeeming the final chunk', unlockedBalance);
     } else {
+      /// need to make sure clock is set correctly
       uint256 periodsElapsed = (redemptionTime - start) / period;
       uint256 calculatedBalance = periodsElapsed * rate;
-      unlockedBalance = min(calculatedBalance, availableAmount);
-      lockedBalance = availableAmount - unlockedBalance;
-      unlockTime = start + (period * periodsElapsed);
+      if (availableAmount < calculatedBalance) {
+        // determine how many periods can be unlocked with the available amount
+        uint256 availablePeriods = availableAmount / rate;
+        unlockedBalance = availablePeriods * rate;
+        lockedBalance = availableAmount - unlockedBalance;
+        unlockTime = start + (period * availablePeriods);
+        console.log('redeeming a partial amount', unlockedBalance);
+      } else {
+        unlockedBalance = calculatedBalance;
+        lockedBalance = availableAmount - unlockedBalance;
+        unlockTime = start + (period * periodsElapsed);
+        console.log('redeeming full unlocked amount', unlockedBalance);
+      }
     }
-    
   }
 }

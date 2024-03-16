@@ -42,7 +42,7 @@ const createTests = (params) => {
 
     lockStart = now + BigInt(params.lockStart);
     lockCliff = lockStart + BigInt(params.lockCliff);
-    lockRate = C.getRate(amount, params.lockPeriod, params.lockDuration);
+    lockRate = C.getRate(amount, params.period, params.lockDuration);
     lockPeriod = BigInt(params.lockPeriod);
     lockEnd = C.planEnd(lockStart, amount, lockRate, lockPeriod);
     console.log(`lockupEnd: ${lockEnd}`);

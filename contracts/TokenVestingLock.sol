@@ -57,7 +57,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   mapping(uint256 => address) public votingVaults;
 
-  event VestingLockupCreated(uint256 indexed lockId, address indexed beneficiary, VestingLock lock, uint256 lockEnd);
+  event VestingLockupCreated(uint256 indexed lockId, uint256 indexed vestingTokenId, address indexed beneficiary, VestingLock lock, uint256 lockEnd);
   event TokensUnlocked(uint256 indexed lockId, uint256 unlockedAmount, uint256 remainingTotal, uint256 unlockTime);
   event VestingRedeemed(uint256 indexed lockId, uint256 indexed vestingId, uint256 redeemedAmount, uint256 availableAmount, uint256 totalAmount);
   event LockEdited(uint256 indexed lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period, uint256 end);
@@ -214,7 +214,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
       emit AdminRedemption(newLockId, true);
     }
     _mint(recipient.beneficiary, newLockId);
-    emit VestingLockupCreated(newLockId, recipient.beneficiary, _vestingLocks[newLockId], lockEnd);
+    emit VestingLockupCreated(newLockId, vestingTokenId, recipient.beneficiary, _vestingLocks[newLockId], lockEnd);
   }
 
   function redeemAndUnlock(uint256[] calldata lockIds) external nonReentrant returns (uint256[] memory redeemedBalances, uint256[] memory vestingRemainder, uint256[] memory unlockedBalances) {
@@ -431,8 +431,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this will call an internal delegate function for processing
   /// if there is no voting vault setup, this function will automatically create a voting vault and then delegate the tokens to the delegatee
   /// @param lockId is the id of the vesting plan and NFT
-  function delegate(uint256 lockId, address delegatee) external nonReentrant {
-    _delegate(lockId, delegatee);
+  function delegate(uint256 lockId, address delegatee) external nonReentrant returns (address votingVault) {
+    votingVault = _delegate(lockId, delegatee);
   }
 
   /// @notice this function allows an owner of multiple vesting plans to delegate multiple of them in a single transaction, each planId corresponding to a delegatee address
@@ -455,6 +455,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!delegator');
     require(votingVaults[lockId] == address(0), 'exists');
     VestingLock memory lock = _vestingLocks[lockId];
+    require(lock.availableAmount > 0, '!balance');
     VotingVault vault = new VotingVault(lock.token, ownerOf(lockId));
     votingVaults[lockId] = address(vault);
     TransferHelper.withdrawTokens(lock.token, address(vault), lock.availableAmount);
@@ -467,13 +468,14 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// and then it will delegate the tokens held in the vault to the delegatee
   /// @param lockId is the id of the vesting plan and NFT
   /// @param delegatee is the address of the delegatee where the tokens in the voting vault will be delegated to
-  function _delegate(uint256 lockId, address delegatee) internal {
+  function _delegate(uint256 lockId, address delegatee) internal returns (address) {
     require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!delegator');
     address vault = votingVaults[lockId];
     if (votingVaults[lockId] == address(0)) {
       vault = _setupVoting(lockId);
     }
     VotingVault(vault).delegateTokens(delegatee);
+    return vault;
   }
 
   /*******INTERNAL OVERRIDE TRANSFERABILITY*********************************************************************************/
