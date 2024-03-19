@@ -223,8 +223,73 @@ contract BatchCreator {
         vestingPlans[i].rate,
         vestingPlans[i].period,
         vestingAdmin,
+        true
+      );
+      uint256 newLockId = IVestingLockup(lockupContract).createVestingLock(
+        IVestingLockup.Recipient(recipients[i].beneficiary, recipients[i].adminRedeem),
+        newVestingId,
+        locks[i].start,
+        locks[i].cliff,
+        locks[i].rate,
+        locks[i].period,
+        transferablelocks,
         adminTransferOBO
       );
+      newVestingIds[i] = newVestingId;
+      newLockIds[i] = newLockId;
+      amountCheck += vestingPlans[i].amount;
+    }
+    require(amountCheck == totalAmount, 'totalAmount error');
+    emit VestingLockupBatchCreated(
+      msg.sender,
+      token,
+      vestingPlans.length,
+      newVestingIds,
+      newLockIds,
+      totalAmount,
+      mintType
+    );
+    return (newVestingIds, newLockIds);
+  }
+
+  function createVestingLockupPlansWithDelegation(
+    address vestingContract,
+    address lockupContract,
+    address token,
+    IVestingLockup.Recipient[] calldata recipients,
+    address[] calldata delegatees,
+    Plan[] calldata vestingPlans,
+    address vestingAdmin,
+    bool adminTransferOBO,
+    Plan[] calldata locks,
+    bool transferablelocks,
+    uint256 totalAmount,
+    uint8 mintType
+  ) external returns (uint256[] memory, uint256[] memory) {
+    require(vestingPlans.length == recipients.length, 'lenError');
+    require(vestingPlans.length == locks.length, 'lenError');
+    require(totalAmount > 0, '0_totalAmount');
+    require(IVestingLockup(lockupContract).hedgeyVesting() == vestingContract, 'wrongContract');
+    TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
+    SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
+    uint256 amountCheck;
+    uint256[] memory newVestingIds = new uint256[](vestingPlans.length);
+    uint256[] memory newLockIds = new uint256[](vestingPlans.length);
+    for (uint16 i; i < vestingPlans.length; i++) {
+      uint256 newVestingId = IVestingLockup(vestingContract).createPlan(
+        address(this),
+        token,
+        vestingPlans[i].amount,
+        vestingPlans[i].start,
+        vestingPlans[i].cliff,
+        vestingPlans[i].rate,
+        vestingPlans[i].period,
+        vestingAdmin,
+        true
+      );
+      IVestingLockup(vestingContract).delegate(newVestingId, delegatees[i]);
+      IERC721(vestingContract).transferFrom(address(this), lockupContract, newVestingId);
+      IVestingLockup(vestingContract).changeVestingPlanAdmin(newVestingId, vestingAdmin);
       uint256 newLockId = IVestingLockup(lockupContract).createVestingLock(
         IVestingLockup.Recipient(recipients[i].beneficiary, recipients[i].adminRedeem),
         newVestingId,
