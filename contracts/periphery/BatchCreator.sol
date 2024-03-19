@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import '../libraries/TransferHelper.sol';
 import '../interfaces/IVestingLockup.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 
 contract BatchCreator {
   event VestingLockupBatchCreated(
