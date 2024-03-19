@@ -60,7 +60,6 @@ library UnlockLibrary {
       lockedBalance = 0;
       unlockTime = start;
       unlockedBalance = availableAmount;
-      console.log('redeeming the final chunk', unlockedBalance);
     } else {
       /// need to make sure clock is set correctly
       uint256 periodsElapsed = (redemptionTime - start) / period;
@@ -71,12 +70,10 @@ library UnlockLibrary {
         unlockedBalance = availablePeriods * rate;
         lockedBalance = availableAmount - unlockedBalance;
         unlockTime = start + (period * availablePeriods);
-        console.log('redeeming a partial amount', unlockedBalance);
       } else {
         unlockedBalance = calculatedBalance;
         lockedBalance = availableAmount - unlockedBalance;
         unlockTime = start + (period * periodsElapsed);
-        console.log('redeeming full unlocked amount', unlockedBalance);
       }
     }
   }
