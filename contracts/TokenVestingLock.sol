@@ -339,18 +339,19 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   }
 
   function editLockDetails(uint256 lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period) external {
-    require(msg.sender == _vestingLocks[lockId].vestingAdmin, '!vestingAdmin');
+    VestingLock storage lock = _vestingLocks[lockId];
+    require(msg.sender == lock.vestingAdmin, '!vestingAdmin');
     // must be before the later of the start or cliff
-    uint256 editableDate = start > cliff ? start : cliff;
+    uint256 editableDate = lock.start > lock.cliff ? lock.start : lock.cliff;
     require(block.timestamp < editableDate, '!editable');
-    _vestingLocks[lockId].start = start;
-    _vestingLocks[lockId].cliff = cliff;
-    _vestingLocks[lockId].rate = rate;
-    _vestingLocks[lockId].period = period;
-    _vestingLocks[lockId].totalAmount = hedgeyVesting.plans(_vestingLocks[lockId].vestingTokenId).amount + _vestingLocks[lockId].availableAmount;
-    (uint256 end, bool valid) = UnlockLibrary.validateEnd(start, cliff, _vestingLocks[lockId].totalAmount, rate, period);
+    lock.start = start;
+    lock.cliff = cliff;
+    lock.rate = rate;
+    lock.period = period;
+    lock.totalAmount = hedgeyVesting.plans(lock.vestingTokenId).amount + lock.availableAmount;
+    (uint256 end, bool valid) = UnlockLibrary.validateEnd(start, cliff, lock.totalAmount, rate, period);
     require(valid);
-    uint256 vestingEnd = hedgeyVesting.planEnd(_vestingLocks[lockId].vestingTokenId);
+    uint256 vestingEnd = hedgeyVesting.planEnd(lock.vestingTokenId);
     require(end >= vestingEnd, 'end error');
     emit LockEdited(lockId, start, cliff, rate, period, end);
   }
