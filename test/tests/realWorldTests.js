@@ -36,6 +36,7 @@ const clientMTests = () => {
       start: firstVestingDate,
       cliff: firstVestingDate,
       rate: firstAmount,
+      period,
     };
     let firstLockStart = BigInt(1725667200);
     let firstLock = {
@@ -43,6 +44,7 @@ const clientMTests = () => {
       start: firstLockStart,
       cliff: firstLockStart,
       rate: firstAmount,
+      period,
     };
     await batch.createVestingLockupPlans(
       vesting.target,

@@ -7,7 +7,7 @@ const { ethers } = require('hardhat');
 
 const playground = () => {
     let deployed, admin, a, b, c, d, token, nvt, vesting, lockup, batch;
-    it('tests for a streaming vesting plan unlocked by a periodic lockup plan for 10k tokens, 1 year vesting with overlapping and followed 18 month lockup', async () => {
+    it('tests for a streaming vesting plan unlocked by a periodic lockup plan for 10k tokens', async () => {
         deployed = await deploy(18);
     admin = deployed.admin;
     a = deployed.a;
@@ -42,7 +42,7 @@ const playground = () => {
         period: C.WEEK,
     }
     console.log(`lockup rate: ${lockPlan.rate}`);
-    let tx = await batch.createVestingLockupPlans(vesting.target, lockup.target, token.target, admin, true, [vestingPlan], [recipient], [lockPlan], true, amount, 1);
+    let tx = await batch.createVestingLockupPlans(vesting.target, lockup.target, token.target, [recipient], [vestingPlan], admin, true, [lockPlan], true, amount, 1);
     let lockPlan1 = await lockup.getVestingLock('1');
     console.log(`original start date: ${lockPlan1.start}`);
     // want to test unlocking enough tokens on the vesting plan to cover 1 week, but redeeming at the 2 week break point
@@ -88,6 +88,39 @@ const playground = () => {
     await time.increaseTo(await lockup.getLockEnd('1'));
     await lockup.redeemAndUnlock(['1']);
     console.log(`final balance: ${await token.balanceOf(lockup.target)}`);
+    });
+    it('tests for a monthly vesting plan unlocked by a streaming lockup plan', async () => {
+        let now = BigInt(await time.latest());
+        let amount = C.E18_10000;
+        let recipient = {
+            beneficiary: a.address,
+            adminRedeem: true
+        }
+        let vestingPlan = {
+            amount,
+            start: now,
+            cliff: now,
+            rate: amount / BigInt(12),
+            period: C.MONTH,
+        }
+        console.log(`vesting rate: ${vestingPlan.rate}`);
+        
+        let lockPlan = {
+            amount,
+            start: now,
+            cliff: now,
+            rate: amount / (C.YEAR + C.YEAR), //2 years
+            period: BigInt(1),
+        }
+        console.log(`lockup rate: ${lockPlan.rate}`);
+        let tx = await batch.createVestingLockupPlans(vesting.target, lockup.target, token.target, [recipient], [vestingPlan], admin, true, [lockPlan], true, amount, 1);
+        let lockPlan2 = await lockup.getVestingLock('2');
+        console.log(`original start date: ${lockPlan2.start}`);
+        //check unlocking in 1 month
+        tx = await lockup.connect(a).redeemAndUnlock(['2']);
+        await time.increase(C.MONTH);
+        tx = await lockup.connect(a).redeemAndUnlock(['2']);
+        
     })
 }
 
