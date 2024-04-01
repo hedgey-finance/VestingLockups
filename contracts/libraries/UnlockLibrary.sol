@@ -13,20 +13,33 @@ library UnlockLibrary {
     end = (amount % rate == 0) ? (amount / rate) * period + start : ((amount / rate) * period) + period + start;
   }
 
+
+  /// @notice function to validate the end date of a vesting lock 
+  /// @param start is the start date of the lockup
+  /// @param cliff is the cliff date of the lockup
+  /// @param amount is the total amount of tokens in the lockup, which would be the entire amount of the vesting plan
+  /// @param rate is the amount of tokens that unlock per period
+  /// @param period is the seconds in each period, a 1 is a period of 1 second whereby tokens unlock every second
+  /// @param vestingEnd is the end date of the vesting plan
+  /// @dev this function validates the lockup end date against 0 entry values, plus ensures that the cliff date is at least the same as the end date
+  /// and finally it chekcs that if the lock isn't a single date unlock, that the end date is beyond the vesting end date
   function validateEnd(
     uint256 start,
     uint256 cliff,
     uint256 amount,
     uint256 rate,
-    uint256 period
-  ) internal pure returns (uint256 end, bool valid) {
+    uint256 period,
+    uint256 vestingEnd
+  ) internal pure returns (uint256 end) {
     require(amount > 0, '0_amount');
     require(rate > 0, '0_rate');
     require(rate <= amount, 'rate > amount');
     require(period > 0, '0_period');
-    end = (amount % rate == 0) ? (amount / rate) * period + start : ((amount / rate) * period) + period + start;
+    end = endDate(start, amount, rate, period);
     require(cliff <= end, 'cliff > end');
-    valid = true;
+    if (rate < amount) {
+      require(end >= vestingEnd, 'end error');
+    }
   }
 
   /// @notice function to calculate the unlocked (claimable) balance, still locked balance, and the most recent timestamp the unlock would take place

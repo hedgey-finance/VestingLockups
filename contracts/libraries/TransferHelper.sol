@@ -22,10 +22,10 @@ library TransferHelper {
     uint256 amount
   ) internal {
     uint256 priorBalance = IERC20(token).balanceOf(address(to));
-    require(IERC20(token).balanceOf(from) >= amount, 'THL01');
+    require(IERC20(token).balanceOf(from) >= amount, 'insufficient balance');
     SafeERC20.safeTransferFrom(IERC20(token), from, to, amount);
     uint256 postBalance = IERC20(token).balanceOf(address(to));
-    require(postBalance - priorBalance == amount, 'THL02');
+    require(postBalance - priorBalance == amount, 'to_error');
   }
 
   /// @notice Internal function is used with standard ERC20 transfer method
@@ -41,7 +41,7 @@ library TransferHelper {
     uint256 priorBalance = IERC20(token).balanceOf(address(to));
     SafeERC20.safeTransfer(IERC20(token), to, amount);
     uint256 postBalance = IERC20(token).balanceOf(address(to));
-    require(postBalance - priorBalance == amount, 'THL02');
+    require(postBalance - priorBalance == amount, 'to_error');
   }
 
 }

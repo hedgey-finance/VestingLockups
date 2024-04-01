@@ -287,15 +287,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
     require(msg.sender == hedgeyPlanCreator || msg.sender == vestingAdmin, 'not allowed');
     uint256 totalAmount = hedgeyVesting.plans(vestingTokenId).amount;
+    if (rate == totalAmount) period = 1;
     address token = hedgeyVesting.plans(vestingTokenId).token;
     uint256 vestingEnd = hedgeyVesting.planEnd(vestingTokenId);
-    (uint256 lockEnd, bool valid) = UnlockLibrary.validateEnd(start, cliff, totalAmount, rate, period);
-    require(valid, 'invalid end');
-    if (rate == totalAmount) {
-      period = 1;
-    } else {
-      require(lockEnd >= vestingEnd, 'end error');
-    }
+    uint256 lockEnd = UnlockLibrary.validateEnd(start, cliff, totalAmount, rate, period, vestingEnd);
     newLockId = incrementTokenId();
     _vestingLocks[newLockId] = VestingLock(
       token,
@@ -510,6 +505,17 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     }
   }
 
+  /// @notice function to allow the admin to edit the lock details for a lock that hasn't started yet
+  /// @param lockId is the token Id of the lockup NFT
+  /// @param start is the start date of the new lockup schedule
+  /// @param cliff is the cliff date of the new lockup schedule
+  /// @param rate is the rate at which tokens unlock per period
+  /// @param period is the length of each discrete period
+  /// @dev this function can Only be called before the later of the start or the cliff - ie the lock must effectively not have started or have anything unlocked to change it
+  /// the function can only be called by the existing vesting admin
+  /// the function will update the vestinglock storage with the new start, cliff, rate, and period parameters
+  /// the function will also double check and update the vesting plan to pull in the new total amount, being the available amount and the amount still in the vesting plan
+  /// the function then validates that the end date
   function editLockDetails(uint256 lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period) external {
     VestingLock storage lock = _vestingLocks[lockId];
     require(msg.sender == lock.vestingAdmin, '!vestingAdmin');
@@ -519,13 +525,11 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     lock.start = start;
     lock.cliff = cliff;
     lock.rate = rate;
-    lock.period = period;
     lock.totalAmount = hedgeyVesting.plans(lock.vestingTokenId).amount + lock.availableAmount;
-    (uint256 end, bool valid) = UnlockLibrary.validateEnd(start, cliff, lock.totalAmount, rate, period);
-    require(valid);
+    lock.period = rate == lock.totalAmount ? 1 : period;
     uint256 vestingEnd = hedgeyVesting.planEnd(lock.vestingTokenId);
-    require(end >= vestingEnd, 'end error');
-    emit LockEdited(lockId, start, cliff, rate, period, end);
+    uint256 end = UnlockLibrary.validateEnd(start, cliff, lock.totalAmount, rate, lock.period, vestingEnd);
+    emit LockEdited(lockId, start, cliff, rate, lock.period, end);
   }
 
   /// @notice function to allow the admin to transfer on behalf of the beneficial owner of the vesting lock NFT
