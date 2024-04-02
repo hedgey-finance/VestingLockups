@@ -78,7 +78,7 @@ const createTests = (params) => {
         vestingRate,
         vestingPeriod,
         vestingAdmin,
-        true
+        false
       );
     expect(tx).to.emit(lock, 'VestingLockupCreated').withArgs(
       1,
@@ -110,7 +110,7 @@ const createTests = (params) => {
     expect(plan.rate).to.equal(vestingRate);
     expect(plan.period).to.equal(vestingPeriod);
     expect(plan.vestingAdmin).to.equal(vestingAdmin);
-    expect(plan.adminTransferOBO).to.equal(true);
+    expect(plan.adminTransferOBO).to.equal(false);
     expect(await vesting.ownerOf(1)).to.equal(lock.target);
     expect(await vesting.planEnd(1)).to.equal(vestingEnd);
     const lockup = await lock.getVestingLock(1);
@@ -167,7 +167,7 @@ const createTests = (params) => {
     expect(plan.rate).to.equal(vestingRate);
     expect(plan.period).to.equal(vestingPeriod);
     expect(plan.vestingAdmin).to.equal(vestingAdmin);
-    expect(plan.adminTransferOBO).to.equal(true);
+    expect(plan.adminTransferOBO).to.equal(false);
     expect(await vesting.ownerOf(2)).to.equal(lock.target);
     expect(await vesting.planEnd(2)).to.equal(vestingEnd);
     let lockup = await lock.getVestingLock(2);
@@ -369,7 +369,7 @@ const createTests = (params) => {
     expect(vestingPlanInfo.rate).to.eq(vestingRate);
     expect(vestingPlanInfo.period).to.eq(vestingPeriod);
     expect(vestingPlanInfo.vestingAdmin).to.eq(vestingAdmin);
-    expect(vestingPlanInfo.adminTransferOBO).to.eq(true);
+    expect(vestingPlanInfo.adminTransferOBO).to.eq(false);
     expect(lockPlanInfo.token).to.eq(token.target);
     expect(lockPlanInfo.totalAmount).to.eq(amount);
     expect(lockPlanInfo.availableAmount).to.eq(0);
