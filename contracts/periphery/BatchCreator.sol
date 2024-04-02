@@ -6,7 +6,9 @@ import '../interfaces/IVestingLockup.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 
-contract BatchCreator {
+/// @title BatchCreator is a contract that allows creating multiple vesting plans, lockup plans and vesting lockup plans in a single transaction
+
+contract BatchCreator is ERC721Holder {
   event VestingLockupBatchCreated(
     address indexed creator,
     address indexed token,
@@ -192,7 +194,6 @@ contract BatchCreator {
   }
 
   function createVestingLockupPlans(
-    address vestingContract,
     address lockupContract,
     address token,
     IVestingLockup.Recipient[] calldata recipients,
@@ -207,7 +208,7 @@ contract BatchCreator {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
-    require(IVestingLockup(lockupContract).hedgeyVesting() == vestingContract, 'wrongContract');
+    address vestingContract = IVestingLockup(lockupContract).hedgeyVesting();
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;
@@ -253,7 +254,6 @@ contract BatchCreator {
   }
 
   function createVestingLockupPlansWithDelegation(
-    address vestingContract,
     address lockupContract,
     address token,
     IVestingLockup.Recipient[] calldata recipients,
@@ -269,7 +269,7 @@ contract BatchCreator {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
-    require(IVestingLockup(lockupContract).hedgeyVesting() == vestingContract, 'wrongContract');
+    address vestingContract = IVestingLockup(lockupContract).hedgeyVesting();
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;
@@ -284,7 +284,7 @@ contract BatchCreator {
         vestingPlans[i].cliff,
         vestingPlans[i].rate,
         vestingPlans[i].period,
-        vestingAdmin,
+        address(this),
         true
       );
       IVestingLockup(vestingContract).delegate(newVestingId, delegatees[i]);

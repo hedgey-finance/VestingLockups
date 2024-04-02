@@ -9,7 +9,7 @@ const { playground } = require('./tests/playground');
 const paramsMatrix = [
     {
         decimals: 18,
-        voting: false,
+        voting: true,
         amount: C.E18_100,
         start: 0,
         cliff: 0,
@@ -24,13 +24,17 @@ const paramsMatrix = [
 ]
 
 
+describe('Testing the createTests', () => {
+    paramsMatrix.forEach((params) => {
+        createTests(params);
+    });
+    createErrorTests();
+});
+
 // describe('Testing the happy path', () => {
 //     paramsMatrix.forEach((params) => {
 //         happyPath(params);
 //     });
 // });
 
-describe('Testing the various playground tests', () => {
-    playground();
-})
 
