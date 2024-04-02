@@ -114,8 +114,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   event TransferabilityUpdated(uint256 indexed lockId, bool transferable);
 
   event URISet(string newURI);
-
-  event URIAdminDeleted(address _admin);
+  event AdminChanged(address newAdmin);
+  event PlanCreatorChanged(address newCreator);
 
   /*************CONSTRUCTOR & URI ADMIN FUNCTIONS****************************************************************************************************/
 
@@ -146,12 +146,21 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     emit URISet(_uri);
   }
 
-  /// @notice function to delete the admin once the uri has been set
-  function deleteAdmin() external {
+  /// @notice function to change the admin address
+  /// @param newAdmin is the new address for the admin
+  function changeAdmin(address newAdmin) external {
     require(msg.sender == uriAdmin, '!ADMIN');
-    require(uriSet, '!SET');
-    delete uriAdmin;
-    emit URIAdminDeleted(msg.sender);
+    uriAdmin = newAdmin;
+    emit AdminChanged(newAdmin);
+  }
+
+  /// @notice function to update the plan creator address in the case of updates to the functionality
+  /// @param newCreator is the new address for the plan creator
+  /// @dev only the admin can call this function
+  function updatePlanCreator(address newCreator) external {
+    require(msg.sender == uriAdmin, '!ADMIN');
+    hedgeyPlanCreator = newCreator;
+    emit PlanCreatorChanged(newCreator);
   }
 
   /*****TOKEN ID FUNCTIONS*************************************************************************************/
@@ -269,6 +278,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// then it will set the period to 1. Otherwise it will check that the lock end is greater than or equal to the vesting end
   /// the function will increment the tokenIds counter and store the new lockup NFT in the _vestingLocks mapping
   /// the function will then safeMint the new NFT to the recipient
+  /// the function will toggle the vestingAdminTransfer to false for the vesting plan so that it cannot be pulled out of the lockup contract without approval from the recipient
   /// @dev this function is called either at the creation of both a new vesting plan with a lockup, which is the most common use case and done by the hdedgeyPlanCreator
   /// or it can be done after the fact if a vesting plan is transferred into this contract, and then the vesting admin calls this function to add a lockup schedule to the unallocated vesting plan
   function createVestingLock(
@@ -310,6 +320,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
       emit AdminRedemption(newLockId, true);
     }
     _safeMint(recipient.beneficiary, newLockId);
+    hedgeyVesting.toggleAdminTransferOBO(vestingTokenId, false);
     emit VestingLockupCreated(newLockId, vestingTokenId, recipient.beneficiary, _vestingLocks[newLockId], lockEnd);
   }
 
