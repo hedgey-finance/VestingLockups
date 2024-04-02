@@ -224,7 +224,7 @@ contract BatchCreator is ERC721Holder {
         vestingPlans[i].rate,
         vestingPlans[i].period,
         vestingAdmin,
-        true
+        false
       );
       uint256 newLockId = IVestingLockup(lockupContract).createVestingLock(
         IVestingLockup.Recipient(recipients[i].beneficiary, recipients[i].adminRedeem),
