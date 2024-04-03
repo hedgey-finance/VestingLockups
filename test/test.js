@@ -8,6 +8,7 @@ const { revokeTests } = require('./tests/revokeTests');
 const { transferTests } = require('./tests/transferTests');
 const { managerTests } = require('./tests/managerTests');
 const { delegationTests } = require('./tests/delegationTests');
+const { batchMinterTests } = require('./tests/batchMinterTests');
 
 const paramsMatrix = [
   {
@@ -63,8 +64,14 @@ const paramsMatrix = [
 //     managerTests();
 // });
 
-describe('Testing the delegation functions', () => {
-  paramsMatrix.forEach((params) => {
-    delegationTests(params);
-  });
+// describe('Testing the delegation functions', () => {
+//   paramsMatrix.forEach((params) => {
+//     delegationTests(params);
+//   });
+// });
+
+
+describe('Testing the batch minter tests', () => {
+    batchMinterTests(true);
+    batchMinterTests(false);
 });

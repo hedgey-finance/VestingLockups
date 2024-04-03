@@ -9,6 +9,8 @@ const deploy = async (decimals) => {
     const VotingTokenVestingPlans = await ethers.getContractFactory('VotingTokenVestingPlans');
     const BatchCreator = await ethers.getContractFactory('BatchCreator');
     const TokenVestingLock = await ethers.getContractFactory('TokenVestingLock');
+    const TokenLockupPlans = await ethers.getContractFactory('TokenLockupPlans');
+    const VotingTokenLockupPlans = await ethers.getContractFactory('VotingTokenLockupPlans');
 
     const token = await Token.deploy('Token', 'TK', C.E18_1000000, decimals);
     await token.waitForDeployment();
@@ -24,6 +26,8 @@ const deploy = async (decimals) => {
     const votingLock = await TokenVestingLock.deploy('VotingLock', 'VL', vvp.target, batch.target);
     await vestingLock.waitForDeployment();
     await votingLock.waitForDeployment();
+    const tokenLockup = await TokenLockupPlans.deploy('TokenLockup', 'TL');
+    const votingLockup = await VotingTokenLockupPlans.deploy('VotingLockup', 'VL');
     await token.approve(batch.target, C.E18_1000000);
     await nvt.approve(batch.target, C.E18_1000000);
     return {
@@ -39,6 +43,8 @@ const deploy = async (decimals) => {
         batch,
         vestingLock,
         votingLock,
+        tokenLockup,
+        votingLockup,
     }
 }
 

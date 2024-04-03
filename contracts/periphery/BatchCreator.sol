@@ -43,7 +43,7 @@ contract BatchCreator is ERC721Holder {
     uint256 period;
   }
 
-  function batchLockingPlans(
+  function batchLockupPlans(
     address lockupContract,
     address token,
     uint256 totalAmount,
@@ -77,7 +77,7 @@ contract BatchCreator is ERC721Holder {
     return newPlanIds;
   }
 
-  function batchLockingPlansWithDelegation(
+  function batchLockupPlansWithDelegation(
     address lockupContract,
     address token,
     uint256 totalAmount,
