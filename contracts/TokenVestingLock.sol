@@ -30,10 +30,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   address public hedgeyPlanCreator;
 
   string public baseURI;
-  /// @dev bool to ensure uri has been set before admin can be deleted
-  bool internal uriSet;
-  /// @dev admin for setting the baseURI;
-  address internal uriAdmin;
+  /// @dev manager for setting the baseURI & hedgeyPlanCreator contract;
+  address internal manager;
 
   /// @notice the internal counter of tokenIds that will be mapped to each vestinglock object and the associated NFT
   uint256 internal _tokenIds;
@@ -114,8 +112,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   event TransferabilityUpdated(uint256 indexed lockId, bool transferable);
 
   event URISet(string newURI);
-  event AdminChanged(address newAdmin);
-  event PlanCreatorChanged(address newCreator);
+  event ManagerChanged(address newManager);
+  event PlanCreatorChanged(address newPlanCreator);
 
   /*************CONSTRUCTOR & URI ADMIN FUNCTIONS****************************************************************************************************/
 
@@ -129,7 +127,12 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   ) ERC721(name, symbol) {
     hedgeyVesting = IVesting(_hedgeyVesting);
     hedgeyPlanCreator = _hedgeyPlanCreator;
-    uriAdmin = msg.sender;
+    manager = msg.sender;
+  }
+
+  modifier onlyManager() {
+    require(msg.sender == manager, '!MANAGER');
+    _;
   }
 
   /// @notice override function to deliver custom baseURI
@@ -139,26 +142,22 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   /// @notice function to set the base URI after the contract has been launched, only the admin can call
   /// @param _uri is the new baseURI for the metadata
-  function updateBaseURI(string memory _uri) external {
-    require(msg.sender == uriAdmin, '!ADMIN');
+  function updateBaseURI(string memory _uri) external onlyManager {
     baseURI = _uri;
-    uriSet = true;
     emit URISet(_uri);
   }
 
   /// @notice function to change the admin address
-  /// @param newAdmin is the new address for the admin
-  function changeAdmin(address newAdmin) external {
-    require(msg.sender == uriAdmin, '!ADMIN');
-    uriAdmin = newAdmin;
-    emit AdminChanged(newAdmin);
+  /// @param newManager is the new address for the admin
+  function changeManager(address newManager) external onlyManager {
+    manager = newManager;
+    emit ManagerChanged(newManager);
   }
 
   /// @notice function to update the plan creator address in the case of updates to the functionality
   /// @param newCreator is the new address for the plan creator
   /// @dev only the admin can call this function
-  function updatePlanCreator(address newCreator) external {
-    require(msg.sender == uriAdmin, '!ADMIN');
+  function updatePlanCreator(address newCreator) external onlyManager {
     hedgeyPlanCreator = newCreator;
     emit PlanCreatorChanged(newCreator);
   }
@@ -387,6 +386,9 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(lock.availableAmount == 0, 'available_amount');
     try hedgeyVesting.ownerOf(lock.vestingTokenId) {
       require(hedgeyVesting.ownerOf(lock.vestingTokenId) != address(this), '!revoked');
+      _burn(lockId);
+      delete _vestingLocks[lockId];
+      delete _allocatedVestingTokenIds[lock.vestingTokenId];
     } catch {
       _burn(lockId);
       delete _vestingLocks[lockId];
@@ -543,6 +545,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     emit LockEdited(lockId, start, cliff, rate, lock.period, end);
   }
 
+  /*****************BENEFICIARY TRANSFERABILITY TOGGLES**********************************************************************/
+
   /// @notice function to allow the admin to transfer on behalf of the beneficial owner of the vesting lock NFT
   /// @param lockId is the token Id of the vesting lock NFT
   /// @param adminTransferOBO is the boolean toggle that would led the vestingAdmin transfer the lockup NFT to another wallet on behalf of the owner in case of emergency
@@ -660,10 +664,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!delegator');
     require(votingVaults[lockId] == address(0), 'exists');
     VestingLock memory lock = _vestingLocks[lockId];
-    require(lock.availableAmount > 0, '!balance');
+    // require(lock.availableAmount > 0, '!balance');
     VotingVault vault = new VotingVault(lock.token, ownerOf(lockId));
     votingVaults[lockId] = address(vault);
-    TransferHelper.withdrawTokens(lock.token, address(vault), lock.availableAmount);
+    if (lock.availableAmount > 0) TransferHelper.withdrawTokens(lock.token, address(vault), lock.availableAmount);
     emit VotingVaultCreated(lockId, address(vault));
     return address(vault);
   }

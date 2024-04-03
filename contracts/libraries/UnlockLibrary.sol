@@ -13,8 +13,7 @@ library UnlockLibrary {
     end = (amount % rate == 0) ? (amount / rate) * period + start : ((amount / rate) * period) + period + start;
   }
 
-
-  /// @notice function to validate the end date of a vesting lock 
+  /// @notice function to validate the end date of a vesting lock
   /// @param start is the start date of the lockup
   /// @param cliff is the cliff date of the lockup
   /// @param amount is the total amount of tokens in the lockup, which would be the entire amount of the vesting plan
@@ -62,28 +61,34 @@ library UnlockLibrary {
     uint256 redemptionTime
   ) internal pure returns (uint256 unlockedBalance, uint256 lockedBalance, uint256 unlockTime) {
     if (start > redemptionTime || cliffDate > redemptionTime) {
+      // if the start date or cliff date are in the future, nothing is unlocked
       lockedBalance = availableAmount;
       unlockTime = start;
       unlockedBalance = 0;
     } else if (availableAmount < rate && totalAmount > rate) {
+      // if the available amount is less than the rate, and the total amount is greater than the rate,
+      // then it is still mid vesting or unlock stream, and so we cant unlock anything because we need to wait for the available amount to be greater than the rate
       lockedBalance = availableAmount;
       unlockTime = start;
       unlockedBalance = 0;
-    } else if (totalAmount <= rate && availableAmount <= rate) {
-      lockedBalance = 0;
-      unlockTime = start;
-      unlockedBalance = availableAmount;
     } else {
       /// need to make sure clock is set correctly
       uint256 periodsElapsed = (redemptionTime - start) / period;
       uint256 calculatedBalance = periodsElapsed * rate;
-      if (availableAmount < calculatedBalance) {
-        // determine how many periods can be unlocked with the available amount
+      if (totalAmount <= calculatedBalance && availableAmount <= calculatedBalance) {
+        /// if the total and the available are less than the calculated amount, then we can redeem the entire available balance
+        lockedBalance = 0;
+        unlockTime = redemptionTime;
+        unlockedBalance = availableAmount;
+      } else if (availableAmount < calculatedBalance) {
+        // else if the available is less than calculated but total is still more than calculated amount - we are still in the middle of vesting terms
+        // so we need to determine the total number of periods we can actually unlock, which is the available amount divided by the rate
         uint256 availablePeriods = availableAmount / rate;
         unlockedBalance = availablePeriods * rate;
         lockedBalance = availableAmount - unlockedBalance;
         unlockTime = start + (period * availablePeriods);
       } else {
+        // the calculated amount is less than available and total, so we just unlock the calculated amount
         unlockedBalance = calculatedBalance;
         lockedBalance = availableAmount - unlockedBalance;
         unlockTime = start + (period * periodsElapsed);
