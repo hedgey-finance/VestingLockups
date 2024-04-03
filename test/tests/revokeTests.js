@@ -110,7 +110,7 @@ const revokeTests = () => {
     await lock.connect(a).redeemAndUnlock(['3']);
     await vesting.revokePlans(['3']);
     await expect(vesting.ownerOf('3')).to.be.reverted;
-    await expect(lock.connect(a).burnRevokedVesting('3')).to.be.revertedWith('available_amount');
+    await expect(lock.connect(a).burnRevokedVesting('3')).to.be.reverted;
     await time.increase(C.MONTH);
     await lock.connect(a).unlock(['3']);
     await lock.connect(a).burnRevokedVesting('3');

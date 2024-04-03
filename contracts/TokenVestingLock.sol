@@ -12,8 +12,6 @@ import './libraries/TransferHelper.sol';
 import './interfaces/IVesting.sol';
 import './periphery/VotingVault.sol';
 
-import 'hardhat/console.sol';
-
 /// @title TokenVestingLock
 /// @notice This contract is used exclusively as an add-module for the Hedgey Vesting Plans to allow an additional lockup mechanism for tokens that are vesting
 /// This contract will point to exactly one specific Hedgey Vesting contract, and it will allow for the holder of the plan to redeem their vesting tokens
@@ -294,7 +292,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(hedgeyVesting.ownerOf(vestingTokenId) == address(this), '!ownerOfNFT');
     _allocatedVestingTokenIds[vestingTokenId] = true;
     address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
-    require(msg.sender == hedgeyPlanCreator || msg.sender == vestingAdmin, 'not allowed');
+    require(msg.sender == hedgeyPlanCreator || msg.sender == vestingAdmin);
     uint256 totalAmount = hedgeyVesting.plans(vestingTokenId).amount;
     if (rate == totalAmount) period = 1;
     address token = hedgeyVesting.plans(vestingTokenId).token;
@@ -383,7 +381,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function burnRevokedVesting(uint256 lockId) external {
     require(msg.sender == ownerOf(lockId), '!owner');
     VestingLock memory lock = _vestingLocks[lockId];
-    require(lock.availableAmount == 0, 'available_amount');
+    require(lock.availableAmount == 0);
     try hedgeyVesting.ownerOf(lock.vestingTokenId) {
       require(hedgeyVesting.ownerOf(lock.vestingTokenId) != address(this), '!revoked');
       _burn(lockId);
@@ -565,7 +563,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     hedgeyVesting.toggleAdminTransferOBO(_vestingLocks[lockId].vestingTokenId, transferable);
   }
 
-  /***************DELEGATION FUNCTIONS**********************************************************************************/
+  /***************DELEGATION FUNCTIONS FOR VESTING PLANS**********************************************************************************/
 
   /// @notice function to delegate the tokens held by the underlying vesting plan
   /// @param lockId is the token Id of the vesting lock NFT
@@ -590,6 +588,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     hedgeyVesting.delegatePlans(lockIds, delegatees);
   }
 
+  /***************DELEGATION FUNCTIONS FOR ERC721DELEGATE CONTRACT**********************************************************************************/
   /// @notice delegation functions do not move any tokens and do not alter any information about the vesting plan object.
   /// the specifically delegate the NFTs using the ERC721Delegate.sol extension.
   /// Use the dedicated snapshot strategy 'hedgey-delegate' to leverage the delegation functions for voting with snapshot
@@ -608,27 +607,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param lockIds is the array of planIds that will be delegated
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
   function delegateLocks(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
-    require(lockIds.length == delegatees.length, 'array error');
+    require(lockIds.length == delegatees.length);
     for (uint256 i; i < lockIds.length; i++) {
       _delegateToken(delegatees[i], lockIds[i]);
     }
   }
 
-  /// @notice this function will pull all of the tokens locked in vesting plans where the NFT has been delegated to a specific delegatee wallet address
-  /// this is useful for the snapshot strategy hedgey-delegate, polling this function based on the wallet signed into snapshot
-  /// by default all NFTs are self-delegated when they are minted.
-  /// @param delegatee is the address of the delegate where NFTs have been delegated to
-  /// @param token is the address of the ERC20 token that is locked in vesting plans and has been delegated
-  function delegatedBalances(address delegatee, address token) external view returns (uint256 delegatedBalance) {
-    uint256 delegateBalance = balanceOfDelegate(delegatee);
-    for (uint256 i; i < delegateBalance; i++) {
-      uint256 lockId = tokenOfDelegateByIndex(delegatee, i);
-      VestingLock memory lock = _vestingLocks[lockId];
-      if (token == lock.token) {
-        delegatedBalance += lock.availableAmount;
-      }
-    }
-  }
+  /***************DELEGATION FUNCTIONS FOR ONCHAIN VOTING**********************************************************************************/
 
   /// @notice function to setup a voting vault, this calls an internal voting function to set it up
   /// @param lockId is the id of the vesting plan and NFT
@@ -648,11 +633,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param lockIds is the ids of the vesting plan and NFT
   /// @param delegatees is the array of addresses where each vesting plan will delegate the tokens to
   function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
-    require(lockIds.length == delegatees.length, 'array error');
+    require(lockIds.length == delegatees.length);
     for (uint256 i; i < lockIds.length; i++) {
       _delegate(lockIds[i], delegatees[i]);
     }
   }
+
+  /**************************INTERNAL ONCHAIN VOTING FUNCTIONS*************************************************************************************************************/
 
   /// @notice the internal function to setup a voting vault.
   /// @dev this will check that no voting vault exists already and then deploy a new voting vault contract
@@ -687,6 +674,38 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     return vault;
   }
 
+  /******************************PUBLIC AGGREGATE VIEW FUNCTIONS ***********************************************************************/
+
+  /// @notice this function will aggregate the available amount for a specific holder across all of their plans, based on a single ERC20 token
+  /// @param holder is the address of the beneficiary who owns the vesting plan(s)
+  /// @param token is the ERC20 address of the token that is stored across the vesting plans
+  function lockedBalances(address holder, address token) external view returns (uint256 lockedBalance) {
+    uint256 holdersBalance = balanceOf(holder);
+    for (uint256 i; i < holdersBalance; i++) {
+      uint256 lockId = tokenOfOwnerByIndex(holder, i);
+      VestingLock memory lock = _vestingLocks[lockId];
+      if (token == lock.token) {
+        lockedBalance += lock.availableAmount;
+      }
+    }
+  }
+
+  /// @notice this function will pull all of the tokens locked in vesting plans where the NFT has been delegated to a specific delegatee wallet address
+  /// this is useful for the snapshot strategy hedgey-delegate, polling this function based on the wallet signed into snapshot
+  /// by default all NFTs are self-delegated when they are minted.
+  /// @param delegatee is the address of the delegate where NFTs have been delegated to
+  /// @param token is the address of the ERC20 token that is locked in vesting plans and has been delegated
+  function delegatedBalances(address delegatee, address token) external view returns (uint256 delegatedBalance) {
+    uint256 delegateBalance = balanceOfDelegate(delegatee);
+    for (uint256 i; i < delegateBalance; i++) {
+      uint256 lockId = tokenOfDelegateByIndex(delegatee, i);
+      VestingLock memory lock = _vestingLocks[lockId];
+      if (token == lock.token) {
+        delegatedBalance += lock.availableAmount;
+      }
+    }
+  }
+
   /*******INTERNAL NFT TRANSFERABILITY UPDATES*********************************************************************************/
 
   /// @notice function that overrides the internal OZ logic to manage the transferability of the NFT
@@ -704,6 +723,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
         return super._update(to, tokenId, auth);
       }
     } else {
+      _updateDelegate(to, tokenId);
       return super._update(to, tokenId, address(0x0));
     }
   }

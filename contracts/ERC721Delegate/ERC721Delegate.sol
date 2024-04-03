@@ -75,14 +75,11 @@ abstract contract ERC721Delegate is PlanDelegator {
     return _delegatedTokens[delegate][index];
   }
 
-  // function _beforeTok_enTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
-  //   super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-  //   uint256 tokenId = firstTokenId;
-  //   if (from == address(0)) {
-  //     _addDelegate(to, tokenId);
-  //   }
-  //   if (to == address(0)) { 
-  //     _removeDelegate(tokenId);
-  //   }
-  // }
+  function _updateDelegate(address to, uint256 tokenId) internal {
+    if (_ownerOf(tokenId) == address(0x0)) {
+      _addDelegate(to, tokenId);
+    } else if (to == address(0x0)) {
+      _removeDelegate(tokenId);
+    }
+  }
 }

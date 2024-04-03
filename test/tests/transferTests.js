@@ -68,6 +68,9 @@ const transferTests = () => {
     await lock.connect(d).approve(admin.address, '1');
     await lock.connect(admin).safeTransferFrom(d.address, a.address, '1');
     expect(await lock.ownerOf('1')).to.eq(a.address);
+    let adminApproved = await lock.getApproved('1');
+    expect(adminApproved).to.eq(C.ZERO_ADDRESS);
+    expect((await lock.getVestingLock(1)).adminTransferOBO).to.eq(false);
   });
   it('checks the transfer toggles', async () => {
     await expect(lock.connect(admin).transferFrom(a.address, b.address, '1')).to.be.reverted;
@@ -79,6 +82,17 @@ const transferTests = () => {
     await lock.connect(admin).transferFrom(b.address, c.address, '1');
     expect(await lock.ownerOf('1')).to.eq(c.address);
   });
+  it('the owner can make a one time allowance for the vestingAdmin to transfer the plan without adminTransferOBO', async () => {
+    // owner is C address
+    // c turns off adminTransferOBO
+    // then approves admin for a one time transfer
+    await lock.connect(c).updateAdminTransferOBO('1', false);
+    await lock.connect(c).approve(admin.address, '1');
+    await lock.connect(admin).safeTransferFrom(c.address, a.address, '1');
+    expect(await lock.ownerOf(1)).to.eq(a.address);
+    // expect that the admin cannot transfer again
+    await expect(lock.connect(admin).safeTransferFrom(a.address, b.address, '1')).to.be.reverted;
+  })
   it('user cant adjust the transferability of their own plan', async () => {
     await expect(lock.connect(c).updateTransferability(['1'], true)).to.be.revertedWith('!vestingAdmin');
   });

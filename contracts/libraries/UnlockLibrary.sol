@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.24;
 
-import 'hardhat/console.sol';
-
 library UnlockLibrary {
   function min(uint256 a, uint256 b) internal pure returns (uint256 _min) {
     _min = (a <= b) ? a : b;
