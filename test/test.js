@@ -1,7 +1,7 @@
 const C = require('./constants');
 const { createTests, createErrorTests } = require('./tests/createTests');
 const happyPath = require('./tests/happyPath');
-const { clientMTests, clientM2Test } = require('./tests/realWorldTests');
+const { testA, testB } = require('./tests/realWorldTests');
 const { playground } = require('./tests/playground');
 const { editTests } = require('./tests/editTests');
 const { revokeTests } = require('./tests/revokeTests');
@@ -26,6 +26,11 @@ const paramsMatrix = [
     }
 ]
 
+// becasue of how hardhat cant reset time, have to run these individually
+// describe('Testing one of the Real world tests', () => {
+//     testA();
+//     testB();
+// })
 
 // describe('Testing the happy path', () => {
 //     happyPath();
@@ -57,6 +62,6 @@ const paramsMatrix = [
 //     transferTests();
 // });
 
-describe('Testing the manager functions', () => {
-    managerTests();
-});
+// describe('Testing the manager functions', () => {
+//     managerTests();
+// });

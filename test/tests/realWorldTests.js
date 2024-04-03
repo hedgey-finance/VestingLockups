@@ -5,7 +5,7 @@ const { expect } = require('chai');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const { ethers } = require('hardhat');
 
-const clientMTests = () => {
+const testA = () => {
   let deployed, admin, a, b, c, d, token, nvt, vesting, batch, lock, amount;
   it('example 1 complex', async () => {
     deployed = await deploy(18);
@@ -47,14 +47,12 @@ const clientMTests = () => {
       period,
     };
     await batch.createVestingLockupPlans(
-      vesting.target,
       lock.target,
       token.target,
-      BigInt(1),
+      [recipient],
+      [firstVestingPlan],
       admin.address,
       true,
-      [firstVestingPlan],
-      [recipient],
       [firstLock],
       true,
       firstAmount,
@@ -65,6 +63,7 @@ const clientMTests = () => {
       start: firstVestingDate,
       cliff: firstVestingDate,
       rate: secondAmount,
+      period,
     };
     let sep11 = BigInt(1726012800);
     let secondLock = {
@@ -72,40 +71,43 @@ const clientMTests = () => {
       start: sep11,
       cliff: sep11,
       rate: BigInt(2951) * BigInt(10 ** 18),
+      period,
     };
     let thirdVestingPlan = {
       amount: thirdAmount,
       start: BigInt(1721520000), //july 21
       cliff: BigInt(1721520000),
       rate: BigInt(12747) * BigInt(10 ** 18),
+      period,
     };
     let thirdLock = {
       amount: thirdAmount,
       start: sep11,
       cliff: sep11,
       rate: BigInt(4780) * BigInt(10 ** 18),
+      period,
     };
     let finalVestingPlan = {
       amount: finalAmount,
       start: BigInt(1729468800), //october 21 2024
       cliff: BigInt(1729468800),
       rate: BigInt(13227) * BigInt(10 ** 18),
+      period,
     };
     let finalLock = {
       amount: finalAmount,
       start: BigInt(1746921600), // may 11 2025
       cliff: BigInt(1746921600),
       rate: BigInt(2205) * BigInt(10 ** 18),
+      period,
     };
     await batch.createVestingLockupPlans(
-      vesting.target,
       lock.target,
       token.target,
-      C.MONTH,
+      [recipient, recipient, recipient],
+      [secondVestingPlan, thirdVestingPlan, finalVestingPlan],
       admin.address,
       true,
-      [secondVestingPlan, thirdVestingPlan, finalVestingPlan],
-      [recipient, recipient, recipient],
       [secondLock, thirdLock, finalLock],
       true,
       secondAmount + thirdAmount + finalAmount,
@@ -164,7 +166,7 @@ const clientMTests = () => {
   });
 };
 
-const clientM2Test = () => {
+const testB = () => {
   let deployed, admin, a, b, c, d, token, nvt, vesting, batch, lock;
   it('example 2 complex, 20mm total vesting over 4 years, 180 day 25% cliff lockup with 10 months after unlocking at 625k per month then 4167k for 21 months', async () => {
     deployed = await deploy(18);
@@ -181,6 +183,7 @@ const clientM2Test = () => {
     let totalAmount = BigInt(20000000) * BigInt(10 ** 18);
     await token.mint(totalAmount);
     await token.approve(batch.target, totalAmount);
+    let period = C.MONTH;
     // split into three chunks
     // first chunk of 25% = 5mm
     // vests on cliff date
@@ -205,46 +208,50 @@ const clientM2Test = () => {
       start: firstVestingDate,
       cliff: firstVestingDate,
       rate: firstAmount,
+      period,
     };
     let firstUnlock = {
       amount: firstAmount,
       start: lockupInitialStart,
       cliff: lockupInitialStart,
       rate: firstAmount,
+      period,
     };
     let secondVestingPlan = {
       amount: secondAmount,
       start: firstVestingDate + C.MONTH,
       cliff: firstVestingDate + C.MONTH,
       rate: BigInt(416667) * BigInt(10 ** 18),
+      period,
     };
     let secondUnlock = {
       amount: secondAmount,
       start: lockupInitialStart,
       cliff: lockupInitialStart,
       rate: BigInt(625000) * BigInt(10 ** 18),
+      period,
     };
     let thirdVestingPlan = {
       amount: finalAmount,
       start: BigInt(1734912000), //december 23 2024,
       cliff: BigInt(1734912000),
       rate: BigInt(416667) * BigInt(10 ** 18),
+      period,
     };
     let thirdUnlock = {
       amount: finalAmount,
       start: BigInt(1752192000), // july 11 2025
       cliff: BigInt(1752192000),
       rate: BigInt(416667) * BigInt(10 ** 18),
+      period,
     };
     await batch.createVestingLockupPlans(
-      vesting.target,
       lock.target,
       token.target,
-      C.MONTH,
+      [recipient, recipient, recipient],
+      [firstVestingPlan, secondVestingPlan, thirdVestingPlan],
       admin.address,
       true,
-      [firstVestingPlan, secondVestingPlan, thirdVestingPlan],
-      [recipient, recipient, recipient],
       [firstUnlock, secondUnlock, thirdUnlock],
       true,
       totalAmount,
@@ -295,6 +302,6 @@ const clientM2Test = () => {
 };
 
 module.exports = {
-  clientMTests,
-  clientM2Test,
+  testA,
+  testB,
 };
