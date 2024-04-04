@@ -563,24 +563,14 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     hedgeyVesting.toggleAdminTransferOBO(_vestingLocks[lockId].vestingTokenId, transferable);
   }
 
-  /***************DELEGATION FUNCTIONS FOR VESTING PLANS**********************************************************************************/
+  /***************DELEGATION FUNCTION FOR VESTING PLANS**********************************************************************************/
 
-  /// @notice function to delegate the tokens held by the underlying vesting plan
-  /// @param lockId is the token Id of the vesting lock NFT
-  /// @param delegatee is the address of the delegatee
-  /// @dev this function will call the underlying vesting plan contract and delegate the tokens to the delegatee
-  /// if the underlying vesting contract is the Voting version, it will create a voting vault and perform the onchain delegation
-  /// otherwise it will delegate the NFT using the ERC721Delegate.sol extension
-  function delegateVestingPlan(uint256 lockId, address delegatee) external {
-    require(_isApprovedDelegatorOrOwner(msg.sender, lockId), '!approved');
-    hedgeyVesting.delegate(_vestingLocks[lockId].vestingTokenId, delegatee);
-  }
 
   /// @notice function to delegate multiple plans to multiple delegates in a single transaction
   /// @param lockIds is the array of tokenIds of the lockup NFTs
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
   /// @dev this function will call the underlying vesting plan contract and delegate the tokens to the delegatee
-  function delegateVestingPlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
     require(lockIds.length == delegatees.length, 'array error');
     for (uint256 i; i < lockIds.length; i++) {
       require(_isApprovedDelegatorOrOwner(msg.sender, lockIds[i]), '!approved');
@@ -589,24 +579,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   }
 
   /***************DELEGATION FUNCTIONS FOR ERC721DELEGATE CONTRACT**********************************************************************************/
-  /// @notice delegation functions do not move any tokens and do not alter any information about the vesting plan object.
-  /// the specifically delegate the NFTs using the ERC721Delegate.sol extension.
-  /// Use the dedicated snapshot strategy 'hedgey-delegate' to leverage the delegation functions for voting with snapshot
-
-  /// @notice function to delegate an individual NFT tokenId to another wallet address.
-  /// @dev by default all plans are self delegated, this allows for the owner of a plan to delegate their NFT to a different address. This calls the internal _delegateToken function from ERC721Delegate.sol contract
-  /// @param lockId is the token Id of the NFT and vesting plan to be delegated
-  /// @param delegatee is the address that the plan will be delegated to
-  function delegateLock(uint256 lockId, address delegatee) external {
-    _delegateToken(delegatee, lockId);
-  }
 
   /// @notice functeion to delegate multiple plans to multiple delegates in a single transaction
   /// @dev this also calls the internal _delegateToken function from ERC721Delegate.sol to delegate an NFT to another wallet.
   /// @dev this function iterates through the array of plans and delegatees, delegating each individual NFT.
   /// @param lockIds is the array of planIds that will be delegated
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
-  function delegateLocks(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+  function delegateLockNFTs(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
     require(lockIds.length == delegatees.length);
     for (uint256 i; i < lockIds.length; i++) {
       _delegateToken(delegatees[i], lockIds[i]);
@@ -621,22 +600,17 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     votingVault = _setupVoting(lockId);
   }
 
-  /// @notice function for an owner of a vesting plan to delegate a single vesting plan to  single delegate
-  /// @dev this will call an internal delegate function for processing
-  /// if there is no voting vault setup, this function will automatically create a voting vault and then delegate the tokens to the delegatee
-  /// @param lockId is the id of the vesting plan and NFT
-  function delegate(uint256 lockId, address delegatee) external nonReentrant returns (address votingVault) {
-    votingVault = _delegate(lockId, delegatee);
-  }
-
   /// @notice this function allows an owner of multiple vesting plans to delegate multiple of them in a single transaction, each planId corresponding to a delegatee address
+  /// @dev this function should only be used for onchain voting and delegation with an ERC20Votes token
   /// @param lockIds is the ids of the vesting plan and NFT
   /// @param delegatees is the array of addresses where each vesting plan will delegate the tokens to
-  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+  function delegateLockPlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant returns (address[] memory) {
     require(lockIds.length == delegatees.length);
+    address[] memory vaults = new address[](lockIds.length);
     for (uint256 i; i < lockIds.length; i++) {
-      _delegate(lockIds[i], delegatees[i]);
+      vaults[i] = _delegate(lockIds[i], delegatees[i]);
     }
+    return vaults;
   }
 
   /**************************INTERNAL ONCHAIN VOTING FUNCTIONS*************************************************************************************************************/

@@ -8,7 +8,7 @@ const { revokeTests } = require('./tests/revokeTests');
 const { transferTests } = require('./tests/transferTests');
 const { managerTests } = require('./tests/managerTests');
 const { delegationTests } = require('./tests/delegationTests');
-const { batchMinterTests } = require('./tests/batchMinterTests');
+const { batchMinterTests } = require('./tests/batchMintertests');
 
 const paramsMatrix = [
   {
