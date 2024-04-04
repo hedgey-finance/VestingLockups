@@ -55,13 +55,13 @@ const createTests = (params) => {
     const tx = await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       vestingAdmin,
       false,
       [lockupPlan],
       false,
-      amount,
       1
     );
     expect(tx)
@@ -148,13 +148,13 @@ const createTests = (params) => {
     const tx = await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       vestingAdmin,
       false,
       [lockupPlan],
       false,
-      amount,
       1
     );
     const plan = await vesting.plans(2);
@@ -239,14 +239,14 @@ const createTests = (params) => {
     let tx = await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount * BigInt(numPlans),
       recipients,
       vestingPlans,
       vestingAdmin,
       false,
       lockupPlans,
       false,
-      amount * BigInt(numPlans),
-      numPlans
+      3
     );
   });
   it('creates a vesting plan first, then admin transfers in and adds on a lockup plan', async () => {
@@ -345,6 +345,7 @@ const createTests = (params) => {
     let tx = await batch.createVestingLockupPlansWithDelegation(
       lock.target,
       token.target,
+      amount * BigInt(numPlans),
       recipients,
       delegates,
       vestingPlans,
@@ -352,7 +353,6 @@ const createTests = (params) => {
       true,
       lockupPlans,
       true,
-      amount * BigInt(numPlans),
       3
     );
     let tokenId = await lock.totalSupply();
@@ -390,7 +390,7 @@ const createTests = (params) => {
 
 const createErrorTests = () => {
   let deployed, admin, a, b, c, d, token, nvt, vesting, batch, lock;
-  let amount, vestingStart, vestingCliff, vestingRate, vestingPeriod, vestingEnd, vestingAdmin, vestingPlan;
+  let amount, vestingStart, vestingCliff, vestingRate, vestingPeriod, vestingEnd, vestingAdmin, vestingPlan, delegate, delegates;
   let lockStart, lockCliff, lockRate, lockPeriod, lockEnd, lockupPlan, recipient;
   it('should revert with (lenError) if the recipients len or locks len or vestingPlans len are different', async () => {
     deployed = await deploy(18);
@@ -399,6 +399,8 @@ const createErrorTests = () => {
     b = deployed.b;
     c = deployed.c;
     d = deployed.d;
+    delegate = d.address;
+    delegates = [delegate];
     token = deployed.token;
     nvt = deployed.nvt;
     batch = deployed.batch;
@@ -436,13 +438,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient, recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('lenError');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient, recipient],
+        [delegate, delegate],
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('lenError');
@@ -450,13 +467,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan, vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('lenError');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan, vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('lenError');
@@ -464,13 +496,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan, lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('lenError');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        [delegate],
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan, lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('lenError');
@@ -480,13 +527,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        0,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('0_totalAmount');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         0,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('0_totalAmount');
@@ -496,13 +558,13 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount - BigInt(100),
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
-        amount - BigInt(100),
         2
       )
     ).to.be.revertedWith('THL01');
@@ -510,13 +572,43 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount + BigInt(100),
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        2
+      )
+    ).to.be.revertedWith('totalAmount error');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
+        amount - BigInt(100),
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
+        2
+      )
+    ).to.be.revertedWith('THL01');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount + BigInt(100),
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         2
       )
     ).to.be.revertedWith('totalAmount error');
@@ -525,13 +617,13 @@ const createErrorTests = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin.address,
       true,
       [lockupPlan],
       true,
-      amount,
       1
     );
     await expect(
@@ -570,13 +662,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('0_amount');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('0_amount');
@@ -588,13 +695,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('0_rate');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('0_rate');
@@ -604,13 +726,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('0_rate');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('0_rate');
@@ -622,13 +759,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('rate > amount');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('rate > amount');
@@ -638,13 +790,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('rate > amount');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('rate > amount');
@@ -656,13 +823,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('0_period');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('0_period');
@@ -672,13 +854,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('0_period');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('0_period');
@@ -691,13 +888,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('cliff > end');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('cliff > end');
@@ -708,13 +920,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('cliff > end');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('cliff > end');
@@ -726,13 +953,28 @@ const createErrorTests = () => {
       batch.createVestingLockupPlans(
         lock.target,
         token.target,
+        amount,
         [recipient],
         [vestingPlan],
         admin.address,
         true,
         [lockupPlan],
         true,
+        1
+      )
+    ).to.be.revertedWith('end error');
+    await expect(
+      batch.createVestingLockupPlansWithDelegation(
+        lock.target,
+        token.target,
         amount,
+        [recipient],
+        delegates,
+        [vestingPlan],
+        admin.address,
+        true,
+        [lockupPlan],
+        true,
         1
       )
     ).to.be.revertedWith('end error');

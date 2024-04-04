@@ -75,25 +75,25 @@ module.exports = () => {
     await batch.createVestingLockupPlans(
       votingLock.target,
       token.target,
+      amount,
       [recipientA],
       [vestingPlan],
       vestingAdmin,
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     await batch.createVestingLockupPlans(
       vestingLock.target,
       token.target,
+      amount,
       [recipientB],
       [vestingPlan],
       vestingAdmin,
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     // move forward in time three weeks before vesting cliff - check that nothing gets redeemed
@@ -176,6 +176,7 @@ module.exports = () => {
     await batch.createVestingLockupPlansWithDelegation(
       votingLock.target,
       token.target,
+      amount,
       [recipientA],
       [a.address],
       [vestingPlan],
@@ -183,14 +184,13 @@ module.exports = () => {
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     let vestingVotingVault = await voteVesting.votingVaults(2);
     expect(await token.balanceOf(vestingVotingVault)).to.equal(amount);
     expect(await token.delegates(vestingVotingVault)).to.equal(a.address);
 
-    await votingLock.connect(a).delegate(2, c.address);
+    await votingLock.connect(a).delegateLockPlans([2], [c.address]);
     let lockVotingVault = await votingLock.votingVaults(2);
     expect(await token.balanceOf(lockVotingVault)).to.equal(0);
     expect(await token.delegates(lockVotingVault)).to.equal(c.address);
@@ -257,6 +257,7 @@ module.exports = () => {
     await batch.createVestingLockupPlansWithDelegation(
       votingLock.target,
       token.target,
+      amount,
       [recipientA],
       [a.address],
       [vestingPlan],
@@ -264,7 +265,6 @@ module.exports = () => {
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     let vestingVotingVault = await voteVesting.votingVaults(3);
@@ -337,6 +337,7 @@ module.exports = () => {
     await batch.createVestingLockupPlansWithDelegation(
       votingLock.target,
       token.target,
+      amount,
       [recipientA],
       [a.address],
       [vestingPlan],
@@ -344,7 +345,6 @@ module.exports = () => {
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     let vestingVotingVault = await voteVesting.votingVaults(4);

@@ -7,8 +7,9 @@ import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 
 /// @title BatchCreator is a contract that allows creating multiple vesting plans, lockup plans and vesting lockup plans in a single transaction
-
+/// @notice there are two types of batching functions, one that creates the plans and one that creates the plans and initially delegates the tokens held by the plans
 contract BatchCreator is ERC721Holder {
+  /**** EVENTS FOR EACH SPECIFIC BATCH FUNCTION*****************************/
   event VestingLockupBatchCreated(
     address indexed creator,
     address indexed token,
@@ -35,6 +36,12 @@ contract BatchCreator is ERC721Holder {
     uint8 mintType
   );
 
+  /// @notice struct to hold the parameters for a vesting or lockup plan, these generally define a vesting or lockup schedule
+  /// @param amount is the amount of tokens in a single plan
+  /// @param start is the block time start date of the plan
+  /// @param cliff is an optional cliff date for the plan
+  /// @param rate is the rate at which the tokens are released per period
+  /// @param period is the length of time between releases, ie each period is the number of seconds in each discrete period when tokens are released
   struct Plan {
     uint256 amount;
     uint256 start;
@@ -43,7 +50,22 @@ contract BatchCreator is ERC721Holder {
     uint256 period;
   }
 
-  function batchLockupPlans(
+  /// @notice an additional multi token transfer funtion for ERC20 tokens to make it simple to send tokens to recipients in a big batch if needed
+  function multiTransferTokens(address token, address[] calldata recipients, uint256[] calldata amounts) external {
+    require(recipients.length == amounts.length);
+    for (uint16 i; i < recipients.length; i++) {
+      TransferHelper.transferTokens(token, msg.sender, recipients[i], amounts[i]);
+    }
+  }
+
+  /// @notice function to batch create lockup plans
+  /// @param lockupContract is the contract address of the specific hedgey lockup plan contract
+  /// @param token is the address of the token being locked up
+  /// @param totalAmount is the total amount of tokens being locked up aggregated across all plans
+  /// @param recipients is an array of addresses that will receive the lockup plans
+  /// @param plans is an array of Plan structs that define the lockup schedules for each plan
+  /// @param mintType is an optional parameter to specify the type of minting that is being done, primarily used for internal database tagging
+  function createLockupPlans(
     address lockupContract,
     address token,
     uint256 totalAmount,
@@ -77,7 +99,15 @@ contract BatchCreator is ERC721Holder {
     return newPlanIds;
   }
 
-  function batchLockupPlansWithDelegation(
+  /// @notice function to batch create lockup plans, and immeditatley have the plans delegate the tokens - should only be used for onchain voting
+  /// @param lockupContract is the contract address of the specific hedgey lockup plan contract
+  /// @param token is the address of the token being locked up
+  /// @param totalAmount is the total amount of tokens being locked up aggregated across all plans
+  /// @param recipients is an array of addresses that will receive the lockup plans
+  /// @param delegatees is the array of address where each individual plan will delegate their tokens to, this may be the same as the recipients
+  /// @param plans is an array of Plan structs that define the lockup schedules for each plan
+  /// @param mintType is an optional parameter to specify the type of minting that is being done, primarily used for internal database tagging
+  function createLockupPlansWithDelegation(
     address lockupContract,
     address token,
     uint256 totalAmount,
@@ -114,7 +144,16 @@ contract BatchCreator is ERC721Holder {
     return newPlanIds;
   }
 
-  function batchVestingPlans(
+  /// @notice function to batch create vesting plans
+  /// @param vestingContract is the contract address of the specific hedgey vesting plan contract
+  /// @param token is the address of the token being vested
+  /// @param totalAmount is the total amount of tokens being vested aggregated across all plans
+  /// @param recipients is an array of addresses that will receive the vesting plans
+  /// @param plans is an array of Plan structs that define the vesting schedules for each plan
+  /// @param vestingAdmin is the address of the admin for the vesting plans
+  /// @param adminTransferOBO is a boolean that specifies if the admin can transfer the vesting plans on behalf of the recipient
+  /// @param mintType is an optional parameter to specify the type of minting that is being done, primarily used for internal database tagging
+  function createVestingPlans(
     address vestingContract,
     address token,
     uint256 totalAmount,
@@ -152,7 +191,17 @@ contract BatchCreator is ERC721Holder {
     return newPlanIds;
   }
 
-  function batchVestingPlansWithDelegation(
+  /// @notice function to batch create vesting plans with immediate delegation of the tokens. 
+  /// @dev Note the vesting admin transferBOB must be true, so it is not an option
+  /// @param vestingContract is the contract address of the specific hedgey vesting plan contract
+  /// @param token is the address of the token being vested
+  /// @param totalAmount is the total amount of tokens being vested aggregated across all plans
+  /// @param recipients is an array of addresses that will receive the vesting plans
+  /// @param delegatees is the array of address where each individual plan will delegate their tokens to, this may be the same as the recipients
+  /// @param plans is an array of Plan structs that define the vesting schedules for each plan
+  /// @param vestingAdmin is the address of the admin for the vesting plans
+  /// @param mintType is an optional parameter to specify the type of minting that is being done, primarily used for internal database tagging
+  function createVestingPlansWithDelegation(
     address vestingContract,
     address token,
     uint256 totalAmount,
@@ -193,16 +242,27 @@ contract BatchCreator is ERC721Holder {
     return newPlanIds;
   }
 
+  /// @notice function to batch create vesting lockup plans
+  /// @param lockupContract is the contract address of the specific hedgey lockup plan contract
+  /// @param token is the address of the token being vested
+  /// @param totalAmount is the total amount of tokens being vested aggregated across all plans
+  /// @param recipients is an array of Recipient structs that define the beneficiary and adminRedeem status for each plan
+  /// @param vestingPlans is an array of Plan structs that define the vesting schedules for each plan
+  /// @param vestingAdmin is the address of the admin for the vesting plans
+  /// @param adminTransferOBO is a boolean that specifies if the admin can transfer the vesting plans on behalf of the recipient
+  /// @param locks is an array of Plan structs that define the lockup schedules for each veting plan
+  /// @param transferablelocks is a boolean that specifies if the lockup plans can be transferred by the beneficiary
+  /// @param mintType is an optional parameter to specify the type of minting that is being done, primarily used for internal database tagging
   function createVestingLockupPlans(
     address lockupContract,
     address token,
+    uint256 totalAmount,
     IVestingLockup.Recipient[] calldata recipients,
     Plan[] calldata vestingPlans,
     address vestingAdmin,
     bool adminTransferOBO,
     Plan[] calldata locks,
     bool transferablelocks,
-    uint256 totalAmount,
     uint8 mintType
   ) external returns (uint256[] memory, uint256[] memory) {
     require(vestingPlans.length == recipients.length, 'lenError');
@@ -253,9 +313,23 @@ contract BatchCreator is ERC721Holder {
     return (newVestingIds, newLockIds);
   }
 
+  /// @notice function to batch create vesting lockup plans with immediate delegation. 
+  /// @dev Note that only the Vesting Plans will delegate initially, not the locksup
+  /// @param lockupContract is the contract address of the specific hedgey lockup plan contract
+  /// @param token is the address of the token being vested
+  /// @param totalAmount is the total amount of tokens being vested aggregated across all plans
+  /// @param recipients is an array of Recipient structs that define the beneficiary and adminRedeem status for each plan
+  /// @param delegatees is an array of addresses that will receive the vesting plans
+  /// @param vestingPlans is an array of Plan structs that define the vesting schedules for each plan
+  /// @param vestingAdmin is the address of the admin for the vesting plans
+  /// @param adminTransferOBO is a boolean that specifies if the admin can transfer the vesting plans on behalf of the recipient
+  /// @param locks is an array of Plan structs that define the lockup schedules for each veting plan
+  /// @param transferablelocks is a boolean that specifies if the lockup plans can be transferred by the beneficiary
+  /// @param mintType is an optional parameter to specify the type of minting that is being done, primarily used for internal database tagging
   function createVestingLockupPlansWithDelegation(
     address lockupContract,
     address token,
+    uint256 totalAmount,
     IVestingLockup.Recipient[] calldata recipients,
     address[] calldata delegatees,
     Plan[] calldata vestingPlans,
@@ -263,7 +337,6 @@ contract BatchCreator is ERC721Holder {
     bool adminTransferOBO,
     Plan[] calldata locks,
     bool transferablelocks,
-    uint256 totalAmount,
     uint8 mintType
   ) external returns (uint256[] memory, uint256[] memory) {
     require(vestingPlans.length == recipients.length, 'lenError');

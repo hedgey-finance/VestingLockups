@@ -40,13 +40,13 @@ const transferTests = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     await lock.connect(a).transferFrom(a.address, b.address, '1');

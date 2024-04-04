@@ -45,13 +45,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan1 = await lockup.getVestingLock('1');
@@ -119,13 +119,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan1 = await lockup.getVestingLock('1');
@@ -195,13 +195,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan1 = await lockup.getVestingLock('1');
@@ -265,13 +265,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan1 = await lockup.getVestingLock('1');
@@ -336,13 +336,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan1 = await lockup.getVestingLock('1');
@@ -410,13 +410,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     await expect(
@@ -463,13 +463,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     await time.increaseTo(lockPlan.cliff);
@@ -517,13 +517,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     await expect(
@@ -569,13 +569,13 @@ const editTests = () => {
     await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     // can't edit the lockup as its already started

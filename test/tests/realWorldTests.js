@@ -49,13 +49,13 @@ const testA = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      firstAmount,
       [recipient],
       [firstVestingPlan],
       admin.address,
       true,
       [firstLock],
       true,
-      firstAmount,
       '1'
     );
     let secondVestingPlan = {
@@ -104,13 +104,13 @@ const testA = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      secondAmount + thirdAmount + finalAmount,
       [recipient, recipient, recipient],
       [secondVestingPlan, thirdVestingPlan, finalVestingPlan],
       admin.address,
       true,
       [secondLock, thirdLock, finalLock],
       true,
-      secondAmount + thirdAmount + finalAmount,
       '2'
     );
     let firstRedemption = BigInt(61849) * BigInt(10 ** 18);
@@ -248,13 +248,13 @@ const testB = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      totalAmount,
       [recipient, recipient, recipient],
       [firstVestingPlan, secondVestingPlan, thirdVestingPlan],
       admin.address,
       true,
       [firstUnlock, secondUnlock, thirdUnlock],
       true,
-      totalAmount,
       '3'
     );
     expect((await vesting.plans(1)).period).to.eq(C.MONTH);

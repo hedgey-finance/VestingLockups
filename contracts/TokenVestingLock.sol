@@ -578,7 +578,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     hedgeyVesting.delegatePlans(lockIds, delegatees);
   }
 
-  /***************DELEGATION FUNCTIONS FOR ERC721DELEGATE CONTRACT**********************************************************************************/
+  /***************DELEGATION FUNCTION FOR ERC721DELEGATE CONTRACT**********************************************************************************/
 
   /// @notice functeion to delegate multiple plans to multiple delegates in a single transaction
   /// @dev this also calls the internal _delegateToken function from ERC721Delegate.sol to delegate an NFT to another wallet.
@@ -592,13 +592,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     }
   }
 
-  /***************DELEGATION FUNCTIONS FOR ONCHAIN VOTING**********************************************************************************/
-
-  /// @notice function to setup a voting vault, this calls an internal voting function to set it up
-  /// @param lockId is the id of the vesting plan and NFT
-  function setupVoting(uint256 lockId) external nonReentrant returns (address votingVault) {
-    votingVault = _setupVoting(lockId);
-  }
+  /***************DELEGATION FUNCTION FOR ONCHAIN VOTING**********************************************************************************/
 
   /// @notice this function allows an owner of multiple vesting plans to delegate multiple of them in a single transaction, each planId corresponding to a delegatee address
   /// @dev this function should only be used for onchain voting and delegation with an ERC20Votes token

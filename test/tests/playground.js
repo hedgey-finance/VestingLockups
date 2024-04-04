@@ -45,13 +45,13 @@ const playground = () => {
     let tx = await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin.address,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan1 = await lockup.getVestingLock('1');
@@ -127,13 +127,13 @@ const playground = () => {
     let tx = await batch.createVestingLockupPlans(
       lockup.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin.address,
       true,
       [lockPlan],
       true,
-      amount,
       1
     );
     let lockPlan2 = await lockup.getVestingLock('2');

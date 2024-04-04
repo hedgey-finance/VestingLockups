@@ -31,7 +31,7 @@ const batchMinterTests = (voting) => {
     };
     let plans = [plan, plan, plan];
     let recipients = [a.address, b.address, c.address];
-    let tx = await batch.batchLockupPlans(lockup.target, token.target, totalAmount, recipients, plans, '4');
+    let tx = await batch.createLockupPlans(lockup.target, token.target, totalAmount, recipients, plans, '4');
     expect(tx)
       .to.emit(batch, 'LockupBatchCreated')
       .withArgs(admin.address, token.target, 3, [1, 2, 3], totalAmount, '4');
@@ -52,7 +52,7 @@ const batchMinterTests = (voting) => {
     expect(await lockup.ownerOf(3)).to.eq(c.address);
 
     let delegates = [d.address, b.address, c.address];
-    tx = await batch.batchLockupPlansWithDelegation(
+    tx = await batch.createLockupPlansWithDelegation(
       lockup.target,
       token.target,
       totalAmount,
@@ -110,7 +110,7 @@ const batchMinterTests = (voting) => {
     };
     let plans = [plan, plan, plan];
     let recipients = [a.address, b.address, c.address];
-    let tx = await batch.batchVestingPlans(vesting.target, token.target, totalAmount, recipients, plans, admin.address, false, '4');
+    let tx = await batch.createVestingPlans(vesting.target, token.target, totalAmount, recipients, plans, admin.address, false, '4');
     expect(tx)
       .to.emit(batch, 'VestingBatchCreated')
       .withArgs(admin.address, token.target, 3, [1, 2, 3], totalAmount, '4');
@@ -125,7 +125,7 @@ const batchMinterTests = (voting) => {
     expect(await vesting.ownerOf(3)).to.eq(c.address);
 
     let delegates = [d.address, b.address, c.address];
-    tx = await batch.batchVestingPlansWithDelegation(vesting.target, token.target, totalAmount, recipients, delegates, plans, admin.address, '5');
+    tx = await batch.createVestingPlansWithDelegation(vesting.target, token.target, totalAmount, recipients, delegates, plans, admin.address, '5');
     expect(tx)
       .to.emit(batch, 'VestingBatchCreated')
       .withArgs(admin.address, token.target, 3, [4, 5, 6], totalAmount, '5');
@@ -149,6 +149,19 @@ const batchMinterTests = (voting) => {
         expect(await vesting.delegatedTo(5)).to.eq(b.address);
         expect(await vesting.delegatedTo(6)).to.eq(c.address);
     }
+  });
+  it('transfer to a variety of addresses with the multi transfer function', async () => {
+    let recipeints = [a.address, b.address, c.address, d.address];
+    let amounts = [C.E18_100, C.E18_100 * BigInt(2), C.E18_100 * BigInt(3), C.E18_1000];
+    let tx = await batch.multiTransferTokens(token.target, recipeints, amounts);
+    expect(tx).to.emit(token, 'Transfer').withArgs(admin.address, a.address, C.E18_100);
+    expect(tx).to.emit(token, 'Transfer').withArgs(admin.address, b.address, C.E18_100 * BigInt(2));
+    expect(tx).to.emit(token, 'Transfer').withArgs(admin.address, c.address, C.E18_100 * BigInt(3));
+    expect(tx).to.emit(token, 'Transfer').withArgs(admin.address, d.address, C.E18_1000);
+    expect(await token.balanceOf(a.address)).to.eq(C.E18_100);
+    expect(await token.balanceOf(b.address)).to.eq(C.E18_100 * BigInt(2));
+    expect(await token.balanceOf(c.address)).to.eq(C.E18_100 * BigInt(3));
+    expect(await token.balanceOf(d.address)).to.eq(C.E18_1000);
   })
 };
 

@@ -40,13 +40,13 @@ const revokeTests = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     await vesting.revokePlans(['1']);
@@ -63,13 +63,13 @@ const revokeTests = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     await time.increase(C.WEEK + C.WEEK);
@@ -97,13 +97,13 @@ const revokeTests = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     await time.increase(C.WEEK);
@@ -124,13 +124,13 @@ const revokeTests = () => {
     await batch.createVestingLockupPlans(
       lock.target,
       token.target,
+      amount,
       [recipient],
       [vestingPlan],
       admin,
       false,
       [lockPlan],
       false,
-      amount,
       1
     );
     await time.increase(C.WEEK);
