@@ -72,8 +72,8 @@ const paramsMatrix = [
 //     batchMinterTests(false);
 // });
 
-// describe('Testing the delegation functions', () => {
-//   paramsMatrix.forEach((params) => {
-//     delegationTests(params);
-//   });
-// });
+describe('Testing the delegation functions', () => {
+  paramsMatrix.forEach((params) => {
+    delegationTests(params);
+  });
+});
