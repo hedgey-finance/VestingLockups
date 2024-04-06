@@ -9,6 +9,7 @@ const { transferTests } = require('./tests/transferTests');
 const { managerTests } = require('./tests/managerTests');
 const { delegationTests } = require('./tests/delegationTests');
 const { batchMinterTests } = require('./tests/batchMintertests');
+const { redeemUnlockTests, redeemUnlockErrorTests } = require('./tests/redeemAndUnlockTests');
 
 const paramsMatrix = [
   {
@@ -72,8 +73,15 @@ const paramsMatrix = [
 //     batchMinterTests(false);
 // });
 
-describe('Testing the delegation functions', () => {
+// describe('Testing the delegation functions', () => {
+//   paramsMatrix.forEach((params) => {
+//     delegationTests(params);
+//   });
+// });
+
+describe('Testing the redeem and unlock functions', () => {
   paramsMatrix.forEach((params) => {
-    delegationTests(params);
+    redeemUnlockTests(params);
   });
+  redeemUnlockErrorTests(paramsMatrix[0]);
 });

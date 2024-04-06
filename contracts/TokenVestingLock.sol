@@ -565,7 +565,6 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   /***************DELEGATION FUNCTION FOR VESTING PLANS**********************************************************************************/
 
-
   /// @notice function to delegate multiple plans to multiple delegates in a single transaction
   /// @param lockIds is the array of tokenIds of the lockup NFTs
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
@@ -598,7 +597,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this function should only be used for onchain voting and delegation with an ERC20Votes token
   /// @param lockIds is the ids of the vesting plan and NFT
   /// @param delegatees is the array of addresses where each vesting plan will delegate the tokens to
-  function delegateLockPlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant returns (address[] memory) {
+  function delegateLockPlans(
+    uint256[] calldata lockIds,
+    address[] calldata delegatees
+  ) external nonReentrant returns (address[] memory) {
     require(lockIds.length == delegatees.length);
     address[] memory vaults = new address[](lockIds.length);
     for (uint256 i; i < lockIds.length; i++) {
