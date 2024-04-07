@@ -76,6 +76,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev if the user sets the zero address to be true, then it is a global approval for anyone to redeem
   mapping(uint256 => mapping(address => bool)) internal _approvedRedeemers;
 
+  mapping(address => mapping(address => bool)) internal _redeemerOperators;
+
   /// @notice separate mapping specifically defining if the vestingAdmin can redeem on behalf of end users
   mapping(uint256 => bool) internal _adminRedeem;
 
@@ -214,7 +216,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev only owner of the NFT can call this function
   /// @dev if the zero address is set to true, then it becomes publicly avilable for anyone to redeem
   function approveRedeemer(uint256 lockId, address redeemer) external {
-    require(msg.sender == ownerOf(lockId), '!owner');
+    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][redeemer], '!owner');
     _approvedRedeemers[lockId][redeemer] = true;
     emit RedeemerApproved(lockId, redeemer);
   }
@@ -224,9 +226,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param redeemer is the address of the redeemer to be removed
   /// @dev this function simply deletes the storage of the approved redeemer
   function removeRedeemer(uint256 lockId, address redeemer) external {
-    require(msg.sender == ownerOf(lockId), '!owner');
+    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][redeemer], '!owner');
     delete _approvedRedeemers[lockId][redeemer];
     emit RedeemerRemoved(lockId, redeemer);
+  }
+
+  function approveRedeemerOperator(address operator, bool approved) external {
+    _redeemerOperators[msg.sender][operator] = approved;
   }
 
   /// @notice function to set the admin redemption toggle on a specific lock NFT
@@ -254,6 +260,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     return (owner == redeemer ||
       _approvedRedeemers[lockId][redeemer] ||
       _approvedRedeemers[lockId][address(0x0)] ||
+      _redeemerOperators[owner][redeemer] ||
       adminCanRedeem(lockId, redeemer));
   }
 
