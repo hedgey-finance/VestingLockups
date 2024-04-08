@@ -9,6 +9,9 @@ There are two core ways to create a vesting plan with an additional lockup;
 1. The vesting admin can use our BatchCreator contract to simultaneously create a new vesting plan and immediately add the lockup layer ontop, where the beneficiary receives their combined vestingLock plan NFT in the single transaction.  
 2. Alternativley, for vesting plans that have been already created, a vesting admin can transfer the plans into the correct vesting lock contract, and then call the create function individually to add the lockup schedule onto the existing vesting plans. 
 
+
+Refernce the existing code base of Hedgey at 'https://github.com/hedgey-finance/Locked_VestingTokenPlans' for details on the Vesting contracts. 
+
 ## Testing
 
 Clone repistory
