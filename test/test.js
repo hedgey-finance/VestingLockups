@@ -28,56 +28,56 @@ const paramsMatrix = [
   },
 ];
 
-// describe('Testing the createTests', () => {
-//     paramsMatrix.forEach((params) => {
-//         createTests(params);
-//     });
-//     createErrorTests();
-// });
+describe('Testing the createTests', () => {
+    paramsMatrix.forEach((params) => {
+        createTests(params);
+    });
+    createErrorTests();
+});
 
 // becasue of how hardhat cant reset time, have to run these individually
 // describe('Testing one of the Real world tests', () => {
 //     testA();
-    // testB();
+//     testB();
 // })
 
-// describe('Testing the happy path', () => {
-//     happyPath();
-// });
+describe('Testing the happy path', () => {
+    happyPath();
+});
 
-// describe('Testing the playground tests', () => {
-//     playground();
-// })
-
-
-
-// describe('Testing the edit function', () => {
-//     editTests();
-// })
-
-// describe('Testing the revoke function', () => {
-//     revokeTests();
-// });
-
-// describe('Testing the transfer function', () => {
-//     transferTests();
-// });
-
-// describe('Testing the manager functions', () => {
-//     managerTests();
-// });
+describe('Testing the playground tests', () => {
+    playground();
+})
 
 
-// describe('Testing the batch minter tests', () => {
-//     batchMinterTests(true);
-//     batchMinterTests(false);
-// });
 
-// describe('Testing the delegation functions', () => {
-//   paramsMatrix.forEach((params) => {
-//     delegationTests(params);
-//   });
-// });
+describe('Testing the edit function', () => {
+    editTests();
+})
+
+describe('Testing the revoke function', () => {
+    revokeTests();
+});
+
+describe('Testing the transfer function', () => {
+    transferTests();
+});
+
+describe('Testing the manager functions', () => {
+    managerTests();
+});
+
+
+describe('Testing the batch minter tests', () => {
+    batchMinterTests(true);
+    batchMinterTests(false);
+});
+
+describe('Testing the delegation functions', () => {
+  paramsMatrix.forEach((params) => {
+    delegationTests(params);
+  });
+});
 
 describe('Testing the redeem and unlock functions', () => {
   paramsMatrix.forEach((params) => {

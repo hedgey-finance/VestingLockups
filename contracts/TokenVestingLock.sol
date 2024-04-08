@@ -131,7 +131,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   }
 
   modifier onlyManager() {
-    require(msg.sender == manager, '!MANAGER');
+    require(msg.sender == manager, '!M');
     _;
   }
 
@@ -216,7 +216,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev only owner of the NFT can call this function
   /// @dev if the zero address is set to true, then it becomes publicly avilable for anyone to redeem
   function approveRedeemer(uint256 lockId, address redeemer) external {
-    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][redeemer], '!owner');
+    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][msg.sender]);
     _approvedRedeemers[lockId][redeemer] = true;
     emit RedeemerApproved(lockId, redeemer);
   }
@@ -226,7 +226,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param redeemer is the address of the redeemer to be removed
   /// @dev this function simply deletes the storage of the approved redeemer
   function removeRedeemer(uint256 lockId, address redeemer) external {
-    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][redeemer], '!owner');
+    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][msg.sender]);
     delete _approvedRedeemers[lockId][redeemer];
     emit RedeemerRemoved(lockId, redeemer);
   }
@@ -239,7 +239,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param lockId is the token Id of the NFT
   /// @param enabled is the boolean toggle to allow the vesting admin to redeem on behalf of the owner
   function setAdminRedemption(uint256 lockId, bool enabled) external {
-    require(msg.sender == ownerOf(lockId), '!owner');
+    require(msg.sender == ownerOf(lockId) || _redeemerOperators[ownerOf(lockId)][msg.sender]);
     _adminRedeem[lockId] = enabled;
     emit AdminRedemption(lockId, enabled);
   }
@@ -296,7 +296,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     bool adminTransferOBO
   ) external nonReentrant returns (uint256 newLockId) {
     require(_allocatedVestingTokenIds[vestingTokenId] == false, 'allocated');
-    require(hedgeyVesting.ownerOf(vestingTokenId) == address(this), '!ownerOfNFT');
+    require(hedgeyVesting.ownerOf(vestingTokenId) == address(this));
     _allocatedVestingTokenIds[vestingTokenId] = true;
     address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
     require(msg.sender == hedgeyPlanCreator || msg.sender == vestingAdmin);
@@ -534,7 +534,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// the function will update the vestinglock storage with the new start, cliff, rate, and period parameters
   /// the function will also double check and update the vesting plan to pull in the new total amount, being the available amount and the amount still in the vesting plan
   /// the function then validates that the end date
-  function editLockDetails(uint256 lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period) external {
+  function editLockDetails(uint256 lockId, uint256 start, uint256 cliff, uint256 rate, uint256 period) external nonReentrant {
     VestingLock storage lock = _vestingLocks[lockId];
     require(msg.sender == lock.vestingAdmin, '!vestingAdmin');
     // must be before the later of the start or cliff
@@ -576,7 +576,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param lockIds is the array of tokenIds of the lockup NFTs
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
   /// @dev this function will call the underlying vesting plan contract and delegate the tokens to the delegatee
-  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external {
     require(lockIds.length == delegatees.length, 'array error');
     for (uint256 i; i < lockIds.length; i++) {
       require(_isApprovedDelegatorOrOwner(msg.sender, lockIds[i]), '!approved');
@@ -591,7 +591,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this function iterates through the array of plans and delegatees, delegating each individual NFT.
   /// @param lockIds is the array of planIds that will be delegated
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
-  function delegateLockNFTs(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
+  function delegateLockNFTs(uint256[] calldata lockIds, address[] calldata delegatees) external {
     require(lockIds.length == delegatees.length);
     for (uint256 i; i < lockIds.length; i++) {
       _delegateToken(delegatees[i], lockIds[i]);
@@ -607,7 +607,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function delegateLockPlans(
     uint256[] calldata lockIds,
     address[] calldata delegatees
-  ) external nonReentrant returns (address[] memory) {
+  ) external returns (address[] memory) {
     require(lockIds.length == delegatees.length);
     address[] memory vaults = new address[](lockIds.length);
     for (uint256 i; i < lockIds.length; i++) {

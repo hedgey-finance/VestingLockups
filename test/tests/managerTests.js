@@ -20,18 +20,18 @@ const managerTests = () => {
 
     let tx = await lock.updateBaseURI('newURI');
     expect(tx).to.emit(lock, 'URISet').withArgs('newURI');
-    await expect(lock.connect(a).updateBaseURI('newUri')).to.be.revertedWith('!MANAGER');
+    await expect(lock.connect(a).updateBaseURI('newUri')).to.be.revertedWith('!M');
   });
   it('manager can change itself to new manager address', async () => {
     let tx = await lock.changeManager(a.address);
     expect(tx).to.emit(lock, 'ManagerChanged').withArgs(a.address);
-    await expect(lock.connect(admin).changeManager(admin.address)).to.be.revertedWith('!MANAGER');
+    await expect(lock.connect(admin).changeManager(admin.address)).to.be.revertedWith('!M');
   });
   it('manager can change the plan creator contract address', async () => {
     deployed = await deploy(18);
     let newBatch = (batch = deployed.batch);
     await lock.connect(a).updatePlanCreator(newBatch.target);
-    await expect(lock.connect(admin).updatePlanCreator(newBatch.target)).to.be.revertedWith('!MANAGER');
+    await expect(lock.connect(admin).updatePlanCreator(newBatch.target)).to.be.revertedWith('!M');
   });
 };
 

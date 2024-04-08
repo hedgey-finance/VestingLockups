@@ -648,7 +648,7 @@ const createErrorTests = () => {
     );
     await expect(
       lock.createVestingLock(recipient, 2, lockStart, lockCliff, lockRate, lockPeriod, false, false)
-    ).to.be.revertedWith('!ownerOfNFT');
+    ).to.be.reverted;
   });
   it('should revert if neither the batch creator of the vesting plan admin attempt to create', async () => {
     await vesting.transferFrom(a.address, lock.target, 2);
