@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 
-/// @notice Library to help safely transfer tokens and handle ETH wrapping and unwrapping of WETH
+/// @notice Library to help safely transfer tokens to and from contracts, only supports ERC20 tokens that are not deflationary or tax tokens. 
 library TransferHelper {
   using SafeERC20 for IERC20;
 
@@ -22,10 +22,10 @@ library TransferHelper {
     uint256 amount
   ) internal {
     uint256 priorBalance = IERC20(token).balanceOf(address(to));
-    require(IERC20(token).balanceOf(from) >= amount, 'insufficient balance');
+    require(IERC20(token).balanceOf(from) >= amount, 'THL01');
     SafeERC20.safeTransferFrom(IERC20(token), from, to, amount);
     uint256 postBalance = IERC20(token).balanceOf(address(to));
-    require(postBalance - priorBalance == amount, 'to_error');
+    require(postBalance - priorBalance == amount, 'THL02');
   }
 
   /// @notice Internal function is used with standard ERC20 transfer method
@@ -41,7 +41,7 @@ library TransferHelper {
     uint256 priorBalance = IERC20(token).balanceOf(address(to));
     SafeERC20.safeTransfer(IERC20(token), to, amount);
     uint256 postBalance = IERC20(token).balanceOf(address(to));
-    require(postBalance - priorBalance == amount, 'to_error');
+    require(postBalance - priorBalance == amount, 'THL02');
   }
 
 }
