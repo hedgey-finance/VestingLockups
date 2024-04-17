@@ -66,8 +66,8 @@ const delegationTests = (params) => {
       '7'
     );
     expect(tx).to.emit(lock, 'VestingLockupBatchCreated').withArgs(admin.address, token.target, 1, 1, 1, amount, '7');
-    let votingVault = await vesting.votingVaults(1);
     if (params.voting) {
+      let votingVault = await vesting.votingVaults(1);
       expect(tx).to.emit(vesting, 'VotingVaultCreated').withArgs(1, votingVault);
       expect(await token.delegates(votingVault)).to.eq(a.address);
       expect(await token.getVotes(a.address)).to.eq(amount);
@@ -123,7 +123,7 @@ const delegationTests = (params) => {
       expect(await token.delegates(vestingVault)).to.eq(d.address);
       expect(await token.delegates(lockVault)).to.eq(d.address);
     } else {
-      await lock.connect(b).delegateNFTs([1], [d.address]);
+      await lock.connect(b).delegateLockNFTs([1], [d.address]);
       expect(await lock.delegatedTo(1)).to.eq(d.address);
       expect(await vesting.delegatedTo(1)).to.eq(d.address);
     }

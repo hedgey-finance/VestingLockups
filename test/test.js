@@ -26,6 +26,20 @@ const paramsMatrix = [
     lockPeriod: C.WEEK,
     adminRedeem: true,
   },
+  {
+    decimals: 18,
+    voting: false,
+    amount: C.E18_1000,
+    start: 0,
+    cliff: 0,
+    duration: C.MONTH,
+    vestingPeriod: 1,
+    lockStart: C.DAY,
+    lockCliff: 0,
+    lockDuration: C.MONTH * BigInt(3),
+    lockPeriod: 1,
+    adminRedeem: true,
+  },
 ];
 
 describe('Testing the createTests', () => {
@@ -36,10 +50,10 @@ describe('Testing the createTests', () => {
 });
 
 // becasue of how hardhat cant reset time, have to run these individually
-// describe('Testing one of the Real world tests', () => {
-//     testA();
+describe('Testing one of the Real world tests', () => {
+    testA();
 //     testB();
-// })
+})
 
 describe('Testing the happy path', () => {
     happyPath();

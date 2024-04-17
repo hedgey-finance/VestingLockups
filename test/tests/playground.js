@@ -143,6 +143,63 @@ const playground = () => {
     await time.increase(C.MONTH);
     tx = await lockup.connect(a).redeemAndUnlock(['2']);
   });
+  it('tests redeeming in the second to last period and then unlocking the final period to see if it will break and push out the end date', async () => {
+    let now = BigInt(await time.latest());
+    let amount = C.E18_10000;
+    let recipient = {
+      beneficiary: d.address,
+      adminRedeem: true,
+    };
+    let vestingPlan = {
+      amount,
+      start: now,
+      cliff: now,
+      rate: amount / BigInt(10),
+      period: C.MONTH,
+    };
+
+    let lockPlan = {
+      amount,
+      start: now,
+      cliff: now,
+      rate: amount / BigInt(10),
+      period: C.MONTH,
+    };
+    let tx = await batch.createVestingLockupPlans(
+      lockup.target,
+      token.target,
+      amount,
+      [recipient],
+      [vestingPlan],
+      admin.address,
+      true,
+      [lockPlan],
+      true,
+      1
+    );
+    // move forward in time to 9th month and redeem only
+    let initalBalanceOfLock = await token.balanceOf(lockup.target);
+    let initialBalanceOfD = await token.balanceOf(d.address);
+    await time.increase(C.MONTH * BigInt(9));
+    await lockup.connect(d).redeemVestingPlans(['3']);
+    expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD);
+    expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock + (vestingPlan.rate * BigInt(9)));
+    await time.increase(C.MONTH);
+    // at the end - just call unlock function now
+    await lockup.connect(d).unlock(['3']);
+    // should unlock just what has been redeemed
+    expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD + (vestingPlan.rate * BigInt(9)));
+    expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock);
+    let lockupPlan = await lockup.getVestingLock('3');
+    // start date should be set to month prior since only 11 months have been unlocked
+    console.log(`start date: ${lockupPlan.start}`);
+    console.log('11 months later: ', lockupPlan.start + (lockupPlan.period * BigInt(9)));
+    // expect(lockupPlan.start).to.eq(lockupPlan.start + (lockupPlan.period * BigInt(11)));
+    // should now be able to call redeemAndUnlock and pull remainning tokens
+    await lockup.connect(d).redeemAndUnlock(['3']);
+    expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD + amount);
+    expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock);
+  })
 };
 
 module.exports = {

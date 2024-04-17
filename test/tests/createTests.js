@@ -127,6 +127,17 @@ const createTests = (params) => {
     expect(await lock.getLockEnd(1)).to.eq(lockEnd);
   });
   it('creates a lockup plan with a single unlock date regardless of the period input when rate equals vesting amount', async () => {
+    let now = BigInt(await time.latest());
+    vestingStart = now + BigInt(params.start);
+    vestingCliff = vestingStart + BigInt(params.cliff);
+    vestingRate = C.getRate(amount, params.vestingPeriod, params.duration);
+    vestingPeriod = BigInt(params.vestingPeriod);
+    vestingEnd = C.planEnd(vestingStart, amount, vestingRate, vestingPeriod);
+    lockStart = now + BigInt(params.lockStart);
+    lockCliff = now + BigInt(params.lockCliff);
+    lockRate = C.getRate(amount, params.lockPeriod, params.lockDuration);
+    lockPeriod = BigInt(params.lockPeriod);
+    lockEnd = C.planEnd(lockStart, amount, lockRate, lockPeriod);
     const vestingPlan = {
       amount,
       start: vestingStart,
@@ -183,7 +194,7 @@ const createTests = (params) => {
     expect(await lock.ownerOf(2)).to.eq(a.address);
     expect(await lock.getLockEnd(2)).to.eq(lockStart + BigInt(1));
     await time.increaseTo(lockStart + BigInt(1));
-    let now = BigInt(await time.latest());
+    now = BigInt(await time.latest());
     let redeemBalance = await vesting.planBalanceOf(2, now + BigInt(1), now + BigInt(1));
     const firstRedemption = redeemBalance.balance;
     await lock.connect(a).redeemAndUnlock([2]);

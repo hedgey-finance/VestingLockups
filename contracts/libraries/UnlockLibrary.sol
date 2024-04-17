@@ -73,15 +73,16 @@ library UnlockLibrary {
       /// need to make sure clock is set correctly
       uint256 periodsElapsed = (redemptionTime - start) / period;
       uint256 calculatedBalance = periodsElapsed * rate;
+      uint256 availablePeriods = availableAmount / rate;
       if (totalAmount <= calculatedBalance && availableAmount <= calculatedBalance) {
         /// if the total and the available are less than the calculated amount, then we can redeem the entire available balance
         lockedBalance = 0;
-        unlockTime = redemptionTime;
+        unlockTime = start + (period * availablePeriods);
         unlockedBalance = availableAmount;
       } else if (availableAmount < calculatedBalance) {
         // else if the available is less than calculated but total is still more than calculated amount - we are still in the middle of vesting terms
         // so we need to determine the total number of periods we can actually unlock, which is the available amount divided by the rate
-        uint256 availablePeriods = availableAmount / rate;
+        // uint256 availablePeriods = availableAmount / rate;
         unlockedBalance = availablePeriods * rate;
         lockedBalance = availableAmount - unlockedBalance;
         unlockTime = start + (period * availablePeriods);
