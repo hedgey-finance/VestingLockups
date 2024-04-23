@@ -22,7 +22,7 @@ import './periphery/VotingVault.sol';
 
 contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this is the implementation stored of the specific Hedgey Vesting contract this particular lockup contract is tied to
-  IVesting public hedgeyVesting;
+  IVesting public immutable hedgeyVesting;
 
   /// @notice for security only a special hedgey plan creator address is able to mint these NFTs in addition to vesting admin of a plan
   address public hedgeyPlanCreator;
@@ -385,16 +385,20 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// used only for emergency purposes where a mistake was made and the vesting plan was not supposed to be locked up or the lockup was wrong and needs to be adjusted
   /// but since only the owner of the lockup can burn the lock NFT, this allows there to be a safety mechanism in place
   /// such that it can be assumed there is agreement between the owner and the vestingAdmin to perform this emergency action
-  function burnRevokedVesting(uint256 lockId) external {
+  function burnRevokedVesting(uint256 lockId) external nonReentrant {
     require(msg.sender == ownerOf(lockId), '!owner');
     VestingLock memory lock = _vestingLocks[lockId];
     require(lock.availableAmount == 0);
     try hedgeyVesting.ownerOf(lock.vestingTokenId) {
       require(hedgeyVesting.ownerOf(lock.vestingTokenId) != address(this), '!revoked');
+      // transfer any available amount back to the token owner
+      TransferHelper.withdrawTokens(lock.token, ownerOf(lockId), lock.availableAmount);
       _burn(lockId);
       delete _vestingLocks[lockId];
       delete _allocatedVestingTokenIds[lock.vestingTokenId];
     } catch {
+      //(bytes memory reason /*lowLevelData*/)
+      // require(bytes4(reason)== ERC721.ERC721NonexistentToken.selector);
       _burn(lockId);
       delete _vestingLocks[lockId];
       delete _allocatedVestingTokenIds[lock.vestingTokenId];
