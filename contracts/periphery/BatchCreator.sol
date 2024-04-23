@@ -10,6 +10,15 @@ import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 /// @notice there are two types of batching functions, one that creates the plans and one that creates the plans and initially delegates the tokens held by the plans
 contract BatchCreator is ERC721Holder {
   /**** EVENTS FOR EACH SPECIFIC BATCH FUNCTION*****************************/
+
+  mapping(address => bool) public whitelist;
+  constructor(address[] memory _whiteList) {
+    for (uint256 i = 0; i < _whiteList.length; i++) {
+      whitelist[_whiteList[i]] = true;
+    }
+  }
+
+
   event VestingLockupBatchCreated(
     address indexed creator,
     address indexed token,
@@ -77,6 +86,7 @@ contract BatchCreator is ERC721Holder {
     require(lockupContract != address(0), '0_locker');
     require(token != address(0), '0_token');
     require(plans.length > 0, 'no plans');
+    require(whitelist[lockupContract], 'not whitelisted');
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), lockupContract, totalAmount);
     uint256 amountCheck;
@@ -120,6 +130,7 @@ contract BatchCreator is ERC721Holder {
     require(lockupContract != address(0), '0_locker');
     require(token != address(0), '0_token');
     require(plans.length > 0, 'no plans');
+    require(whitelist[lockupContract], 'not whitelisted');
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), lockupContract, totalAmount);
     uint256 amountCheck;
@@ -167,6 +178,7 @@ contract BatchCreator is ERC721Holder {
     require(vestingContract != address(0), '0_vesting');
     require(token != address(0), '0_token');
     require(plans.length > 0, 'no plans');
+    require(whitelist[vestingContract], 'not whitelisted');
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;
@@ -215,6 +227,7 @@ contract BatchCreator is ERC721Holder {
     require(vestingContract != address(0), '0_vesting');
     require(token != address(0), '0_token');
     require(plans.length > 0, 'no plans');
+    require(whitelist[vestingContract], 'not whitelisted');
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
     uint256 amountCheck;
@@ -268,6 +281,7 @@ contract BatchCreator is ERC721Holder {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
+    require(whitelist[lockupContract], 'not whitelisted');
     address vestingContract = IVestingLockup(lockupContract).hedgeyVesting();
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
@@ -342,6 +356,7 @@ contract BatchCreator is ERC721Holder {
     require(vestingPlans.length == recipients.length, 'lenError');
     require(vestingPlans.length == locks.length, 'lenError');
     require(totalAmount > 0, '0_totalAmount');
+    require(whitelist[lockupContract], 'not whitelisted');
     address vestingContract = IVestingLockup(lockupContract).hedgeyVesting();
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
     SafeERC20.safeIncreaseAllowance(IERC20(token), vestingContract, totalAmount);
