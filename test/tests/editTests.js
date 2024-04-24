@@ -421,7 +421,7 @@ const editTests = () => {
     );
     await expect(
       lockup.editLockDetails('1', lockPlan.start + C.WEEK, lockPlan.cliff, lockPlan.rate, lockPlan.period)
-    ).to.be.revertedWith('!editable');
+    ).to.be.revertedWith('!e');
   });
 
   it('cannot edit a lockup that has already started (with cliff)', async () => {
@@ -475,7 +475,7 @@ const editTests = () => {
     await time.increaseTo(lockPlan.cliff);
     await expect(
       lockup.editLockDetails('1', lockPlan.start + C.WEEK, lockPlan.cliff, lockPlan.rate, lockPlan.period)
-    ).to.be.revertedWith('!editable');
+    ).to.be.revertedWith('!e');
   });
 
   it('cannot be edited if not vesting admin', async () => {
@@ -528,7 +528,7 @@ const editTests = () => {
     );
     await expect(
       lockup.connect(b).editLockDetails('1', lockPlan.start + C.WEEK, lockPlan.cliff, lockPlan.rate, lockPlan.period)
-    ).to.be.revertedWith('!vestingAdmin');
+    ).to.be.revertedWith('!vA');
   });
   it('should revert if the parameters input create an end error', async () => {
     let now = BigInt(await time.latest());
@@ -581,7 +581,7 @@ const editTests = () => {
     // can't edit the lockup as its already started
     await expect(
       lockup.editLockDetails('1', now, now + C.WEEK, lockPlan.rate, C.WEEK)
-    ).to.be.revertedWith('!editable');
+    ).to.be.revertedWith('!e');
     //update transferability
     let vestingTokenId = (await lockup.getVestingLock('2')).vestingTokenId;
     await lockup.connect(b).updateVestingTransferability('2', true);

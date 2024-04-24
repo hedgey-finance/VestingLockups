@@ -639,7 +639,7 @@ const createErrorTests = () => {
     );
     await expect(
       lock.createVestingLock(recipient, 1, lockStart, lockCliff, lockRate, lockPeriod, false, false)
-    ).to.be.revertedWith('allocated');
+    ).to.be.revertedWith('a');
   });
   it('should revert with (!ownerOfNFT) if the lock contract is not the owner', async () => {
     await expect(

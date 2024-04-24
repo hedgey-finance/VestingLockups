@@ -12,10 +12,17 @@ contract BatchCreator is ERC721Holder {
   /**** EVENTS FOR EACH SPECIFIC BATCH FUNCTION*****************************/
 
   mapping(address => bool) public whitelist;
-  constructor(address[] memory _whiteList) {
+  address private _manager;
+  constructor() {
+    _manager = msg.sender;
+  }
+
+  function initWhiteList(address[] memory _whiteList) external {
+    require(msg.sender == _manager, 'not manager');
     for (uint256 i = 0; i < _whiteList.length; i++) {
       whitelist[_whiteList[i]] = true;
     }
+    delete _manager;
   }
 
 

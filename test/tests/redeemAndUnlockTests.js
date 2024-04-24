@@ -517,9 +517,9 @@ const redeemUnlockErrorTests = (params) => {
       '1'
     );
     await time.increaseTo(vestingEnd);
-    await expect(lock.redeemAndUnlock([1])).to.be.revertedWith('!approved');
-    await expect(lock.redeemVestingPlans([1])).to.be.revertedWith('!approved');
-    await expect(lock.unlock([1])).to.be.revertedWith('!approved');
+    await expect(lock.redeemAndUnlock([1])).to.be.revertedWith('!app');
+    await expect(lock.redeemVestingPlans([1])).to.be.revertedWith('!app');
+    await expect(lock.unlock([1])).to.be.revertedWith('!app');
   });
   it('should revert if the redeeming plan does not exist', async () => {
     await expect(lock.redeemAndUnlock([2])).to.be.reverted;

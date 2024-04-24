@@ -22,14 +22,15 @@ const deploy = async (decimals) => {
     await vvp.waitForDeployment();
     const batch = await BatchCreator.deploy();
     await batch.waitForDeployment();
-    const vestingLock = await TokenVestingLock.deploy('VestingLock', 'VL', tvp.target, batch.target);
-    const votingLock = await TokenVestingLock.deploy('VotingLock', 'VL', vvp.target, batch.target);
+    const vestingLock = await TokenVestingLock.deploy('VestingLock', 'VL', tvp.target, batch.target, admin.address);
+    const votingLock = await TokenVestingLock.deploy('VotingLock', 'VL', vvp.target, batch.target, admin.address);
     await vestingLock.waitForDeployment();
     await votingLock.waitForDeployment();
     const tokenLockup = await TokenLockupPlans.deploy('TokenLockup', 'TL');
     const votingLockup = await VotingTokenLockupPlans.deploy('VotingLockup', 'VL');
     await token.approve(batch.target, C.E18_1000000);
     await nvt.approve(batch.target, C.E18_1000000);
+    await batch.initWhiteList([vestingLock.target, votingLock.target, tvp.target, vvp.target, tokenLockup.target, votingLockup.target]);
     return {
         admin,
         a,

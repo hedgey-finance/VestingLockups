@@ -94,7 +94,7 @@ const transferTests = () => {
     await expect(lock.connect(admin).safeTransferFrom(a.address, b.address, '1')).to.be.reverted;
   })
   it('user cant adjust the transferability of their own plan', async () => {
-    await expect(lock.connect(c).updateTransferability(['1'], true)).to.be.revertedWith('!vestingAdmin');
+    await expect(lock.connect(c).updateTransferability(['1'], true)).to.be.revertedWith('!vA');
   });
   it('admin cannot update the adminTransferOBO of a plan', async () => {
     await expect(lock.connect(admin).updateAdminTransferOBO('1', false)).to.be.revertedWith('!owner');
