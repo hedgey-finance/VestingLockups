@@ -183,23 +183,194 @@ const playground = () => {
     await time.increase(C.MONTH * BigInt(9));
     await lockup.connect(d).redeemVestingPlans(['3']);
     expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD);
-    expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock + (vestingPlan.rate * BigInt(9)));
+    expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock + vestingPlan.rate * BigInt(9));
     await time.increase(C.MONTH);
     // at the end - just call unlock function now
     await lockup.connect(d).unlock(['3']);
     // should unlock just what has been redeemed
-    expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD + (vestingPlan.rate * BigInt(9)));
+    expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD + vestingPlan.rate * BigInt(9));
     expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock);
     let lockupPlan = await lockup.getVestingLock('3');
     // start date should be set to month prior since only 11 months have been unlocked
     console.log(`start date: ${lockupPlan.start}`);
-    console.log('11 months later: ', lockupPlan.start + (lockupPlan.period * BigInt(9)));
+    console.log('11 months later: ', lockupPlan.start + lockupPlan.period * BigInt(9));
     // expect(lockupPlan.start).to.eq(lockupPlan.start + (lockupPlan.period * BigInt(11)));
     // should now be able to call redeemAndUnlock and pull remainning tokens
     await lockup.connect(d).redeemAndUnlock(['3']);
     expect(await token.balanceOf(d.address)).to.eq(initialBalanceOfD + amount);
     expect(await token.balanceOf(lockup.target)).to.eq(initalBalanceOfLock);
-  })
+  });
+  it('tests when the vesting plan is transferred out and the available balance is less than the rate but total amount is more - using redeemVesting to trigger the contract to update the total to only the available', async () => {
+    let now = BigInt(await time.latest());
+    let amount = C.E18_10000;
+    let recipient = {
+      beneficiary: b.address,
+      adminRedeem: true,
+    };
+    let vestingPlan = {
+      amount,
+      start: now,
+      cliff: now,
+      rate: amount / BigInt(20),
+      period: C.WEEK,
+    };
+
+    let lockPlan = {
+      amount,
+      start: now,
+      cliff: now,
+      rate: amount / BigInt(10),
+      period: C.MONTH,
+    };
+    let tx = await batch.createVestingLockupPlans(
+      lockup.target,
+      token.target,
+      amount,
+      [recipient],
+      [vestingPlan],
+      admin.address,
+      true,
+      [lockPlan],
+      true,
+      1
+    );
+    // move forward 1 week and redeem just vesting
+    await time.increase(C.WEEK);
+    await lockup.connect(b).redeemVestingPlans(['4']);
+    await lockup.connect(b).updateVestingTransferability('4', true);
+    await vesting.connect(admin).transferFrom(lockup.target, a.address, '4');
+    // expect that nothing can be unlocked even after 1 month
+    let lockupDetails = await lockup.getVestingLock('4');
+    expect(lockupDetails.availableAmount).to.eq(vestingPlan.rate);
+    expect(lockupDetails.totalAmount).to.eq(amount);
+    await time.increase(C.MONTH);
+    await lockup.connect(b).unlock(['4']);
+    expect(await token.balanceOf(b.address)).to.eq(0);
+    lockupDetails = await lockup.getVestingLock('4');
+    expect(lockupDetails.availableAmount).to.eq(vestingPlan.rate);
+    expect(lockupDetails.totalAmount).to.eq(amount);
+    // then it will call the redeemVesting again to trigger it to sync the total amount with available amount
+    await lockup.connect(b).redeemVestingPlans(['4']);
+    // should trigger the catch and sync available amount to total amount
+    lockupDetails = await lockup.getVestingLock('4');
+    expect(lockupDetails.availableAmount).to.eq(vestingPlan.rate);
+    expect(lockupDetails.totalAmount).to.eq(lockupDetails.availableAmount);
+    await lockup.connect(b).unlock(['4']);
+    expect(await token.balanceOf(b.address)).to.eq(lockupDetails.availableAmount);
+    lockupDetails = await lockup.getVestingLock('4');
+    expect(lockupDetails.totalAmount).to.eq(0);
+    expect(lockupDetails.availableAmount).to.eq(0);
+    expect(lockupDetails.token).to.eq(C.ZERO_ADDRESS);
+    await expect(lockup.ownerOf('4')).to.be.reverted;
+  });
+  it('tests the same transfer test but with the plan being revoked', async () => {
+    let now = BigInt(await time.latest());
+    let amount = C.E18_10000;
+    let recipient = {
+      beneficiary: c.address,
+      adminRedeem: true,
+    };
+    let vestingPlan = {
+      amount,
+      start: now,
+      cliff: now,
+      rate: amount / BigInt(20),
+      period: C.WEEK,
+    };
+
+    let lockPlan = {
+      amount,
+      start: now,
+      cliff: now,
+      rate: amount / BigInt(10),
+      period: C.MONTH,
+    };
+    let tx = await batch.createVestingLockupPlans(
+      lockup.target,
+      token.target,
+      amount,
+      [recipient],
+      [vestingPlan],
+      admin.address,
+      true,
+      [lockPlan],
+      true,
+      1
+    );
+    await time.increase(C.WEEK);
+    await lockup.connect(c).redeemVestingPlans(['5']);
+    await lockup.connect(c).updateVestingTransferability('5', true);
+    await vesting.connect(admin).revokePlans([5]);
+    let lockupDetails = await lockup.getVestingLock('5');
+    expect(lockupDetails.availableAmount).to.eq(vestingPlan.rate);
+    expect(lockupDetails.totalAmount).to.eq(amount);
+    await time.increase(C.MONTH);
+    await lockup.connect(c).unlock(['5']);
+    expect(await token.balanceOf(c.address)).to.eq(0);
+    lockupDetails = await lockup.getVestingLock('5');
+    expect(lockupDetails.availableAmount).to.eq(vestingPlan.rate);
+    expect(lockupDetails.totalAmount).to.eq(amount);
+    // then it will call the redeemVesting again to trigger it to sync the total amount with available amount
+    await lockup.connect(c).redeemVestingPlans(['5']);
+    // should trigger the catch and sync available amount to total amount
+    lockupDetails = await lockup.getVestingLock('5');
+    expect(lockupDetails.availableAmount).to.eq(vestingPlan.rate);
+    expect(lockupDetails.totalAmount).to.eq(lockupDetails.availableAmount);
+    await lockup.connect(c).unlock(['5']);
+    expect(await token.balanceOf(c.address)).to.eq(lockupDetails.availableAmount);
+    //expect that the plan has been deleted and burned
+    lockupDetails = await lockup.getVestingLock('5');
+    expect(lockupDetails.totalAmount).to.eq(0);
+    expect(lockupDetails.availableAmount).to.eq(0);
+    expect(lockupDetails.token).to.eq(C.ZERO_ADDRESS);
+    await expect(lockup.ownerOf('5')).to.be.reverted;
+  });
+  it('checks what happens if the plan that was transferred out is transferred back in with a new lockup created', async () => {
+    await vesting.transferFrom(a.address, lockup.target, '4');
+    let now = BigInt(await time.latest());
+    let recipient = {
+      beneficiary: b.address,
+      adminRedeem: true,
+    };
+    let vestingPlan = await vesting.plans('4');
+    expect(vestingPlan.amount).to.eq(C.E18_10000 - vestingPlan.rate);
+    let lockEnd = C.planEnd(now, vestingPlan.amount, vestingPlan.rate * BigInt(2),C.MONTH,);
+    let tx = await lockup.createVestingLock(
+      recipient,
+      '4',
+      now,
+      now,
+      vestingPlan.rate * BigInt(2),
+      C.MONTH,
+      false,
+      true
+    );
+    expect(tx)
+      .to.emit(lockup, 'VestingLockCreated')
+      .withArgs('6', '4', b.address, {
+        token: token.target,
+        totalAmount: vestingPlan.amount,
+        availableAmount: BigInt(0),
+        start: now,
+        cliff: now,
+        rate: vestingPlan.rate * BigInt(2),
+        period: C.MONTH,
+        vestingTokenId: '4',
+        vestingAdmin: admin.address,
+        transferable: false,
+        adminTransferOBO: true,
+      }, lockEnd);
+      let lockupDetails = await lockup.getVestingLock('6');
+      expect(lockupDetails.totalAmount).to.eq(vestingPlan.amount);
+      expect(lockupDetails.availableAmount).to.eq(BigInt(0));
+      expect(lockupDetails.start).to.eq(now);
+      expect(lockupDetails.cliff).to.eq(now);
+      expect(lockupDetails.rate).to.eq(vestingPlan.rate * BigInt(2));
+      expect(lockupDetails.period).to.eq(C.MONTH);
+      expect(lockupDetails.token).to.eq(token.target);
+      expect(lockupDetails.vestingTokenId).to.eq('4');
+      expect(lockupDetails.vestingAdmin).to.eq(admin.address);
+  });
 };
 
 module.exports = {
