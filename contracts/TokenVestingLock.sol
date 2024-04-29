@@ -390,8 +390,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(msg.sender == ownerOf(lockId), '!owner');
     VestingLock memory lock = _vestingLocks[lockId];
     require(lock.availableAmount == 0);
-    try hedgeyVesting.ownerOf(lock.vestingTokenId) {
-      require(hedgeyVesting.ownerOf(lock.vestingTokenId) != address(this));
+    try hedgeyVesting.ownerOf(lock.vestingTokenId) returns (address vestingOwner) {
+      require(vestingOwner != address(this));
       _burn(lockId);
       delete _vestingLocks[lockId];
       delete _allocatedVestingTokenIds[lock.vestingTokenId];
@@ -464,8 +464,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     require(isApprovedRedeemer(lockId, msg.sender), '!app');
     uint256 vestingId = _vestingLocks[lockId].vestingTokenId;
     require(_allocatedVestingTokenIds[vestingId], '!al');
-    try hedgeyVesting.ownerOf(vestingId) {
-      require(hedgeyVesting.ownerOf(vestingId) == address(this), '!owner');
+    try hedgeyVesting.ownerOf(vestingId) returns (address vestingOwner) {
+      require(vestingOwner == address(this), '!owner');
     } catch {
       // set the total amount to the available amount - this will allow the nft to be unlocked if there is anything left still available but not locked
       _vestingLocks[lockId].totalAmount = _vestingLocks[lockId].availableAmount;
