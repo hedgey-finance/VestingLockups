@@ -342,10 +342,11 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     nonReentrant
     returns (uint256[] memory redeemedBalances, uint256[] memory vestingRemainder, uint256[] memory unlockedBalances)
   {
-    redeemedBalances = new uint256[](lockIds.length);
-    vestingRemainder = new uint256[](lockIds.length);
-    unlockedBalances = new uint256[](lockIds.length);
-    for (uint256 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    redeemedBalances = new uint256[](l);
+    vestingRemainder = new uint256[](l);
+    unlockedBalances = new uint256[](l);
+    for (uint256 i; i < l; i++) {
       (redeemedBalances[i], vestingRemainder[i]) = _redeemVesting(lockIds[i]);
       unlockedBalances[i] = _unlock(lockIds[i]);
     }
@@ -356,8 +357,9 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this function assumes that there are tokens that are vested and have already been redeemed and pulled into this contract that are now just locked and ready to be unlocked
   /// if there is nothing to unlock the function will not revert but no tokens will be moved
   function unlock(uint256[] calldata lockIds) external nonReentrant returns (uint256[] memory unlockedBalances) {
-    unlockedBalances = new uint256[](lockIds.length);
-    for (uint256 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    unlockedBalances = new uint256[](l);
+    for (uint256 i; i < l; i++) {
       unlockedBalances[i] = _unlock(lockIds[i]);
     }
   }
@@ -368,9 +370,10 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function redeemVestingPlans(
     uint256[] calldata lockIds
   ) external nonReentrant returns (uint256[] memory balances, uint256[] memory remainders) {
-    balances = new uint256[](lockIds.length);
-    remainders = new uint256[](lockIds.length);
-    for (uint256 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    balances = new uint256[](l);
+    remainders = new uint256[](l);
+    for (uint256 i; i < l; i++) {
       (balances[i], remainders[i]) = _redeemVesting(lockIds[i]);
     }
   }
@@ -509,7 +512,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// for the case where they have changed their address on the vesting plan contract and need to adjust it on the lockup contract as well
   /// this function just updates the vestingAdmin storage for each plan to the new admin
   function updateVestingAdmin(uint256[] memory lockIds, address newAdmin) external {
-    for (uint16 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    for (uint16 i; i < l; i++) {
       uint256 lockId = lockIds[i];
       address vestingAdmin = hedgeyVesting.plans(_vestingLocks[lockId].vestingTokenId).vestingAdmin;
       require(msg.sender == _vestingLocks[lockId].vestingAdmin || msg.sender == vestingAdmin, '!vA');
@@ -523,7 +527,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param transferable is a boolean toggle that allows the NFT to be transferred to another wallet by the owner of the lockup
   /// @dev this function simply checks that only the current vestingAdmin can make this adjustment, and then updates the storage accordingly
   function updateTransferability(uint256[] memory lockIds, bool transferable) external {
-    for (uint16 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    for (uint16 i; i < l; i++) {
       require(msg.sender == _vestingLocks[lockIds[i]].vestingAdmin, '!vA');
       _vestingLocks[lockIds[i]].transferable = transferable;
       emit TransferabilityUpdated(lockIds[i], transferable);
@@ -585,10 +590,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this function will call the underlying vesting plan contract and delegate the tokens to the delegatee
   function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external {
     require(lockIds.length == delegatees.length);
-    for (uint256 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    uint256[] memory vestingIds = new uint256[](l);
+    for (uint256 i; i < l; i++) {
       require(_isApprovedDelegatorOrOwner(msg.sender, lockIds[i]), '!d');
+      vestingIds[i] = _vestingLocks[lockIds[i]].vestingTokenId;
     }
-    hedgeyVesting.delegatePlans(lockIds, delegatees);
+    hedgeyVesting.delegatePlans(vestingIds, delegatees);
   }
 
   /***************DELEGATION FUNCTION FOR ERC721DELEGATE CONTRACT**********************************************************************************/
@@ -600,7 +608,8 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
   function delegateLockNFTs(uint256[] calldata lockIds, address[] calldata delegatees) external {
     require(lockIds.length == delegatees.length);
-    for (uint256 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    for (uint256 i; i < l; i++) {
       _delegateToken(delegatees[i], lockIds[i]);
     }
   }
@@ -616,8 +625,9 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     address[] calldata delegatees
   ) external returns (address[] memory) {
     require(lockIds.length == delegatees.length);
-    address[] memory vaults = new address[](lockIds.length);
-    for (uint256 i; i < lockIds.length; i++) {
+    uint256 l = lockIds.length;
+    address[] memory vaults = new address[](l);
+    for (uint256 i; i < l; i++) {
       vaults[i] = _delegate(lockIds[i], delegatees[i]);
     }
     return vaults;
