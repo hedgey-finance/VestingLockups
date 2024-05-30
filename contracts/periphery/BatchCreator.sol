@@ -19,7 +19,7 @@ contract BatchCreator is ERC721Holder {
 
   function initWhiteList(address[] memory _whiteList) external {
     require(msg.sender == _manager, 'not manager');
-    for (uint256 i = 0; i < _whiteList.length; i++) {
+    for (uint256 i; i < _whiteList.length; i++) {
       whitelist[_whiteList[i]] = true;
     }
     delete _manager;

@@ -170,7 +170,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     return _tokenIds;
   }
   /// @notice function to get the current running total of tokenId, useful for when totalSupply does not match
-  function currentTokenId() public view returns (uint256) {
+  function currentTokenId() external view returns (uint256) {
     return _tokenIds;
   }
 
@@ -178,13 +178,13 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   /// @notice function to get the lock details of a specific lock NFT
   /// @param lockId is the token Id of the NFT
-  function getVestingLock(uint256 lockId) public view returns (VestingLock memory) {
+  function getVestingLock(uint256 lockId) external view returns (VestingLock memory) {
     return _vestingLocks[lockId];
   }
 
   /// @notice function to get the end date of a specific lock NFT
   /// @param lockId is the token Id of the NFT
-  function getLockEnd(uint256 lockId) public view returns (uint256 end) {
+  function getLockEnd(uint256 lockId) external view returns (uint256 end) {
     VestingLock memory lock = _vestingLocks[lockId];
     end = UnlockLibrary.endDate(lock.start, lock.totalAmount, lock.rate, lock.period);
   }
@@ -196,7 +196,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev the unlockTime is the timestamp when the lock resets based on how many periods were able to be unlocked
   function getLockBalance(
     uint256 lockId
-  ) public view returns (uint256 unlockedBalance, uint256 lockedBalance, uint256 unlockTime) {
+  ) external view returns (uint256 unlockedBalance, uint256 lockedBalance, uint256 unlockTime) {
     VestingLock memory lock = _vestingLocks[lockId];
     (unlockedBalance, lockedBalance, unlockTime) = UnlockLibrary.balanceAtTime(
       lock.start,
@@ -345,7 +345,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     redeemedBalances = new uint256[](lockIds.length);
     vestingRemainder = new uint256[](lockIds.length);
     unlockedBalances = new uint256[](lockIds.length);
-    for (uint256 i = 0; i < lockIds.length; i++) {
+    for (uint256 i; i < lockIds.length; i++) {
       (redeemedBalances[i], vestingRemainder[i]) = _redeemVesting(lockIds[i]);
       unlockedBalances[i] = _unlock(lockIds[i]);
     }
@@ -357,7 +357,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// if there is nothing to unlock the function will not revert but no tokens will be moved
   function unlock(uint256[] calldata lockIds) external nonReentrant returns (uint256[] memory unlockedBalances) {
     unlockedBalances = new uint256[](lockIds.length);
-    for (uint256 i = 0; i < lockIds.length; i++) {
+    for (uint256 i; i < lockIds.length; i++) {
       unlockedBalances[i] = _unlock(lockIds[i]);
     }
   }
@@ -370,7 +370,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   ) external nonReentrant returns (uint256[] memory balances, uint256[] memory remainders) {
     balances = new uint256[](lockIds.length);
     remainders = new uint256[](lockIds.length);
-    for (uint256 i = 0; i < lockIds.length; i++) {
+    for (uint256 i; i < lockIds.length; i++) {
       (balances[i], remainders[i]) = _redeemVesting(lockIds[i]);
     }
   }

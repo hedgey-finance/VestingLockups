@@ -2,9 +2,6 @@
 pragma solidity 0.8.24;
 
 library UnlockLibrary {
-  function min(uint256 a, uint256 b) internal pure returns (uint256 _min) {
-    _min = (a <= b) ? a : b;
-  }
 
   /// @notice function to calculate the end date of a plan based on its start, amount, rate and period
   function endDate(uint256 start, uint256 amount, uint256 rate, uint256 period) internal pure returns (uint256 end) {
@@ -82,7 +79,6 @@ library UnlockLibrary {
       } else if (availableAmount < calculatedBalance) {
         // else if the available is less than calculated but total is still more than calculated amount - we are still in the middle of vesting terms
         // so we need to determine the total number of periods we can actually unlock, which is the available amount divided by the rate
-        // uint256 availablePeriods = availableAmount / rate;
         unlockedBalance = availablePeriods * rate;
         lockedBalance = availableAmount - unlockedBalance;
         unlockTime = start + (period * availablePeriods);

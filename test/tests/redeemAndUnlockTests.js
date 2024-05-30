@@ -403,6 +403,7 @@ const redeemUnlockTests = (params) => {
     vestingCliff = vestingStart + BigInt(params.cliff);
     vestingPeriod = C.WEEK;
     vestingRate = C.getRate(amount, vestingPeriod, C.MONTH);
+    console.log(`vesting rate: ${vestingRate}`);
     vestingEnd = C.planEnd(vestingStart, amount, vestingRate, vestingPeriod);
     vestingAdmin = admin.address;
     vestingPlan = {
@@ -414,6 +415,7 @@ const redeemUnlockTests = (params) => {
     };
     lockPeriod = BigInt(1);
     lockRate = C.getRate(amount, lockPeriod, C.MONTH);
+    console.log(`lock rate: ${lockRate}`);
     lockStart = params.lockStart = vestingCliff + vestingPeriod;
     lockEnd = C.planEnd(lockStart, amount, lockRate, lockPeriod);
     lockPlan = {
