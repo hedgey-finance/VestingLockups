@@ -296,7 +296,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
     bool transferable,
     bool adminTransferOBO
   ) external nonReentrant returns (uint256 newLockId) {
-    require(_allocatedVestingTokenIds[vestingTokenId] == false, 'a');
+    require(!_allocatedVestingTokenIds[vestingTokenId], 'a');
     require(hedgeyVesting.ownerOf(vestingTokenId) == address(this));
     _allocatedVestingTokenIds[vestingTokenId] = true;
     address vestingAdmin = hedgeyVesting.plans(vestingTokenId).vestingAdmin;
