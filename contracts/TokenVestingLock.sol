@@ -588,7 +588,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @param lockIds is the array of tokenIds of the lockup NFTs
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
   /// @dev this function will call the underlying vesting plan contract and delegate the tokens to the delegatee
-  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external {
+  function delegatePlans(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
     require(lockIds.length == delegatees.length);
     uint256 l = lockIds.length;
     uint256[] memory vestingIds = new uint256[](l);
@@ -606,7 +606,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   /// @dev this function iterates through the array of plans and delegatees, delegating each individual NFT.
   /// @param lockIds is the array of planIds that will be delegated
   /// @param delegatees is the array of addresses that each corresponding planId will be delegated to
-  function delegateLockNFTs(uint256[] calldata lockIds, address[] calldata delegatees) external {
+  function delegateLockNFTs(uint256[] calldata lockIds, address[] calldata delegatees) external nonReentrant {
     require(lockIds.length == delegatees.length);
     uint256 l = lockIds.length;
     for (uint256 i; i < l; i++) {
@@ -623,7 +623,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function delegateLockPlans(
     uint256[] calldata lockIds,
     address[] calldata delegatees
-  ) external returns (address[] memory) {
+  ) external nonReentrant returns (address[] memory) {
     require(lockIds.length == delegatees.length);
     uint256 l = lockIds.length;
     address[] memory vaults = new address[](l);
