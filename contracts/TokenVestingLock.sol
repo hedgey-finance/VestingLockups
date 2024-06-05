@@ -110,6 +110,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
 
   event VestingAdminUpdated(uint256 indexed lockId, address newAdmin);
   event TransferabilityUpdated(uint256 indexed lockId, bool transferable);
+  event LockAdminTransferToggle(uint256 indexed id, bool transferable);
 
   event URISet(string newURI);
   event ManagerChanged(address newManager);
@@ -570,6 +571,7 @@ contract TokenVestingLock is ERC721Delegate, ReentrancyGuard, ERC721Holder {
   function updateAdminTransferOBO(uint256 lockId, bool adminTransferOBO) external {
     require(msg.sender == ownerOf(lockId), '!owner');
     _vestingLocks[lockId].adminTransferOBO = adminTransferOBO;
+    emit LockAdminTransferToggle(lockId, adminTransferOBO);
   }
 
   /// @notice function to allow the admin of the actual vesting plan to transfer the vesting plan out of this contract
