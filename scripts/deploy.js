@@ -12,7 +12,7 @@ async function deployVestingLock(vestingAddress, votingVestingAddress, uriBase, 
   const votingLock = await TokenVestingLock.deploy('VotingVestingLockup', 'VVL', votingVestingAddress, batch.target, manager);
   await vestingLock.waitForDeployment();
   await votingLock.waitForDeployment();
-  console.log(`New VotingLock Contract deployed to address: ${vestingLock.target}`);
+  console.log(`New VestingLock Contract deployed to address: ${vestingLock.target}`);
   console.log(`New Voting VestingLock Contract deployed to address: ${votingLock.target}`);
   console.log(`New Batch Creator Contract deployed to address: ${batch.target}`);
   let uri = `${uriBase}${vestingLock.target.toLowerCase()}/`;
@@ -32,15 +32,15 @@ async function deployVestingLock(vestingAddress, votingVestingAddress, uriBase, 
 }
 
 
-const lockups = '0xb49d0CD3D5290adb4aF1eBA7A6B90CdE8B9265ff';
-const votingLockups = '0xB82b292C9e33154636fe8839fDb6d4081Da5c359';
-const boundLockups = '0xD7E7ba882a4533eC8C8C9fB933703a42627D4deA';
-const boundVotingLockups = '0x2cE4DC254a4B48824e084791147Ff7220F1A08a7';
-const vesting = '0x68b6986416c7A38F630cBc644a2833A0b78b3631'
-const voting = '0x8345Cfc7eB639a9178FA9e5FfdeBB62CCF5846A3'
-const uriBase = 'https://dynamic-nft.hedgey.finance/sepolia/'
+const lockups = '0x1961A23409CA59EEDCA6a99c97E4087DaD752486';
+const votingLockups = '0x73cD8626b3cD47B009E68380720CFE6679A3Ec3D';
+const boundLockups = '0xA600EC7Db69DFCD21f19face5B209a55EAb7a7C0';
+const boundVotingLockups = '0xdE8465D44eBfC761Ee3525740E06C916886E1aEB';
+const vesting = '0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C'
+const voting = '0x1bb64AF7FE05fc69c740609267d2AbE3e119Ef82'
+const uriBase = 'https://dynamic-nft.hedgey.finance/ethereum/'
 
-// deployVestingLock(vesting, voting, uriBase, [lockups, votingLockups, boundLockups, boundVotingLockups, vesting, voting]);
+deployVestingLock(vesting, voting, uriBase, [lockups, votingLockups, boundLockups, boundVotingLockups, vesting, voting]);
 
 
 async function deployToken(args) {

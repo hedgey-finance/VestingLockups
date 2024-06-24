@@ -31,9 +31,13 @@ npx hardhat run scripts/deploy.js --network <network-name>
 
 ## Testnet Deployments
 
-TokenVestingLock (attached to vesting contract `0x68b6986416c7A38F630cBc644a2833A0b78b3631`): `0x5FAd0089966172959Ae4f6A42C7dF1Dcf67Efee7`    
-TokenVestingLock (attached to vesting contract w/onchain voting: `0x8345Cfc7eB639a9178FA9e5FfdeBB62CCF5846A3`): `0x6aa30f9Fd88Bd079d4E76F6F379aB2fE472fDb91`     
-BatchCreator Contract deployed to: `0xDf69982cEB2bd36058a1635b98f61d88d52501f5`   
+VestingLockup (attached to vesting contract `0x958fE688C717131DDECca10997fE04752a51f492`): `0x5FAd0089966172959Ae4f6A42C7dF1Dcf67Efee7`    
+VotingVestingLockup (attached to vesting contract w/onchain voting: `0x0E01bC2677C1DcE5D6deF5a52381e70fd881aF00`): `0x6aa30f9Fd88Bd079d4E76F6F379aB2fE472fDb91`     
+BatchCreator Contract deployed to: `0x54E16a6e3A37036Ee8e4389E909566CC769A35ce`   
 
 
 ## Mainnet Deployments
+
+VestingLockup contract attached to vesting contract `0x2CDE9919e81b20B4B33DD562a48a84b54C48F00C` deployed at: `0x3A2Ac19Ac5Aaae8493eD1F31C17e5c82CA49bca7`      
+VotingVestingLockup contract attached to vesting contract `0x1bb64AF7FE05fc69c740609267d2AbE3e119Ef82` deployed at: `0x4755b9F00bFa5A912236d93b2CC05E460ADD31BD`   
+Batch Creator contract deployed at: `0xABecEB00c040a40d2c06c3f61AF38c2e4B422bbe`
